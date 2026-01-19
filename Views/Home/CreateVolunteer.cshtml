@@ -1,0 +1,240 @@
+﻿@model H4G_Project.Models.VolunteerApplication
+
+@{
+    ViewData["Title"] = "Volunteer Application";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet">
+
+<style>
+    html {
+        background-color: #56baed;
+    }
+
+    body {
+        font-family: "Poppins", sans-serif;
+        height: 100vh;
+        margin: 0;
+    }
+
+    a {
+        color: #92badd;
+        text-decoration: none;
+        font-weight: 400;
+    }
+
+    .wrapper {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+        min-height: 100%;
+        padding: 20px;
+    }
+
+    #formContent {
+        border-radius: 10px;
+        background: #fff;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.3);
+        text-align: center;
+        padding: 30px;
+    }
+
+    h2 {
+        text-align: center;
+        font-size: 18px;
+        font-weight: 600;
+        color: #0d0d0d;
+        margin-bottom: 20px;
+    }
+
+    h3 {
+        text-align: left;
+        font-size: 16px;
+        font-weight: 600;
+        margin-top: 20px;
+        margin-bottom: 10px;
+    }
+
+    input[type=text],
+    input[type=email],
+    input[type=tel],
+    input[type=password],
+    select,
+    textarea,
+    input[type=file] {
+        background-color: #f6f6f6;
+        border: none;
+        color: #0d0d0d;
+        padding: 12px 20px;
+        margin: 5px 0 15px 0;
+        width: 95%;
+        border: 2px solid #f6f6f6;
+        border-radius: 5px;
+        font-size: 15px;
+        transition: all 0.3s ease-in-out;
+    }
+
+    input[type=text]:focus,
+    input[type=email]:focus,
+    input[type=tel]:focus,
+    input[type=password]:focus,
+    select:focus,
+    textarea:focus,
+    input[type=file]:focus {
+        background-color: #fff;
+        border-bottom: 2px solid #5fbae9;
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 60px;
+    }
+
+    input[type=submit],
+    input[type=button] {
+        background-color: #56baed;
+        border: none;
+        color: white;
+        padding: 15px 40px;
+        text-align: center;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 10px 0;
+        cursor: pointer;
+        transition: all 0.3s ease-in-out;
+    }
+
+    input[type=submit]:hover,
+    input[type=button]:hover {
+        background-color: #39ace7;
+    }
+
+    input[type=submit]:active,
+    input[type=button]:active {
+        transform: scale(0.95);
+    }
+
+    select {
+        text-align: left;
+        padding-left: 10px;
+    }
+
+    /* Placeholder styling */
+    ::placeholder {
+        color: #cccccc;
+    }
+
+    /* Labels for spacing */
+    p {
+        text-align: left;
+        margin: 0 0 10px 0;
+    }
+
+    /* Fade-in animation */
+    .fadeInDown {
+        animation: fadeInDown 1s ease forwards;
+    }
+
+    @@keyframes fadeInDown {
+        0% {
+            opacity: 0;
+            transform: translateY(-50px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+
+<div class="wrapper fadeInDown">
+    <div id="formContent">
+        <h1 class="User active underlineHover">BE A PART OF MINDS</h1>
+
+        @if (ViewBag.ErrorMessage != null)
+        {
+            <div
+                style="color: red; margin: 10px 0; padding: 10px; background-color: #ffe6e6; border: 1px solid #ff0000; border-radius: 5px;">
+                @ViewBag.ErrorMessage
+            </div>
+        }
+
+        @using (Html.BeginForm("NewVolunteerApplication", "Application", FormMethod.Post, new
+        {
+            enctype =
+                "multipart/form-data"
+        }))
+        {
+
+            <h2 class="mt-4">Personal Information</h2>
+            <p>Full Name:</p>
+            @Html.TextBoxFor(m => m.Name, new { placeholder = "Full Name", required = "required" })
+
+            <p>Occupation:</p>
+            @Html.TextBoxFor(m => m.Occupation, new { placeholder = "Occupation", required = "required" })
+
+            <p>Email Address:</p>
+            @Html.TextBoxFor(m => m.Email, new { type = "email", placeholder = "Email", required = "required" })
+
+            <p>Contact Number:</p>
+            @Html.TextBoxFor(m => m.ContactNumber, new { type = "tel", placeholder = "Phone Number", required = "required"
+        })
+
+        <p>Date Of Birth:</p>
+        @Html.TextBoxFor(m => m.DateOfBirth, new { type = "date", placeholder = "Date Of Birth", required = "required",
+                max = DateTime.Today.ToString("yyyy-MM-dd") })
+
+        <p>Additional Notes:</p>
+        @Html.TextAreaFor(m => m.Notes, new { placeholder = "Any relevant information" })
+
+        <h2 class="mt-4">Supporting Documents</h2>
+        <p>Upload Resume:</p>
+        <input type="file" name="resume" accept=".pdf,.doc,.docx,.jpg,.png" required />
+
+        <p>Upload Identification (NRIC/Passport):</p>
+        <input type="file" name="idDocument" accept=".pdf,.jpg,.png" required />
+
+        <input type="submit" value="SUBMIT APPLICATION" />
+
+                }
+    </div>
+</div>
+
+<script>
+    // Date of Birth validation - ensure only past dates or today can be selected
+    document.addEventListener('DOMContentLoaded', function () {
+        const dobInput = document.querySelector('input[name="DateOfBirth"]');
+        if (dobInput) {
+            // Set maximum date to today
+            const today = new Date().toISOString().split('T')[0];
+            dobInput.setAttribute('max', today);
+
+            // Add change event listener for additional validation
+            dobInput.addEventListener('change', function () {
+                const selectedDate = new Date(this.value);
+                const todayDate = new Date();
+                todayDate.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+
+                if (selectedDate > todayDate) {
+                    alert('Date of Birth cannot be in the future.');
+                    this.value = ''; // Clear the invalid date
+                }
+
+                // Optional: Check for reasonable age limits (e.g., not older than 120 years)
+                const minDate = new Date();
+                minDate.setFullYear(minDate.getFullYear() - 120);
+
+                if (selectedDate < minDate) {
+                    alert('Please enter a valid date of birth.');
+                    this.value = ''; // Clear the invalid date
+                }
+            });
+        }
+    });
+</script>

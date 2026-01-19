@@ -1,0 +1,359 @@
+@model List<VolunteerApplication>
+
+@{
+    ViewData["Title"] = "Volunteer Application Management";
+    Layout = "~/Views/Shared/_Staff.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/applicationmodal.css" />
+
+@Html.AntiForgeryToken()
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@if (TempData["WarningMessage"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        @TempData["WarningMessage"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user-plus"></i> Volunteer Applications</h2>
+        <div>
+            <a href="@Url.Action("Index", "Application")" class="btn btn-info mr-2">
+                <i class="fas fa-user-plus"></i> View Client Applications
+            </a>
+            <a href="@Url.Action("VolunteerRegistrations", "Application")" class="btn btn-success">
+                <i class="fas fa-hands-helping"></i> View Volunteer Registrations
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="searchInput">Search:</label>
+                <input type="text" id="searchInput" onkeyup="searchClientTable()" class="form-control"
+                    placeholder="Search by name, occupation, or notes...">
+            </div>
+            <div class="col-md-3">
+                <label for="occupationFilter">Filter by Occupation:</label>
+                <select id="occupationFilter" onchange="filterClientTable()" class="form-control">
+                    <option value="">-- All Occupations --</option>
+                    <option value="teacher">Teacher</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="engineer">Engineer</option>
+                    <option value="student">Student</option>
+                    <option value="retired">Retired</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="clientStatusFilter">Filter by Status:</label>
+                <select id="clientStatusFilter" onchange="filterClientTable()" class="form-control">
+                    <option value="">-- All Statuses --</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="declined">Declined</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>&nbsp;</label> <!-- Empty label for alignment -->
+                <button type="button" class="btn btn-outline-secondary btn-block" onclick="clearAllFilters()">
+                    <i class="fas fa-times-circle"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <table class="table table-bordered table-striped" id="clientApplicationsTable">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Name</th>
+                    <th>Occupation</th>
+                    <th>Date of Birth</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (VolunteerApplication r in Model)
+                {
+                    <tr>
+                        <td>@r.Name</td>
+                        <td>@r.Occupation</td>
+                        <td>@(string.IsNullOrEmpty(r.DateOfBirth) ? "Not provided" : r.DateOfBirth)</td>
+                        <td>
+                            @{
+                                string statusClass = r.Status switch
+                                {
+                                    "Approved" => "badge badge-success",
+                                    "Declined" => "badge badge-danger",
+                                    _ => "badge badge-warning"
+                                };
+                            }
+                            <span class="@statusClass">@(r.Status ?? "Pending")</span>
+                        </td>
+                        <td>@r.Notes</td>
+                        <td>
+                            <a href="javascript:void(0);" class="text-primary"
+                                onclick="showClientDetails('@r.Id', '@r.Name', '@(r.DateOfBirth ?? "")', '', '@r.Notes', '@r.Email', '@r.ContactNumber', '@r.Occupation', '@(r.Status ?? "Pending")')">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Volunteer Application Details Modal -->
+<div class="modal fade" id="clientDetailsModal" tabindex="-1" role="dialog" aria-labelledby="clientDetailsModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clientDetailsModalLabel">Volunteer Application Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Volunteer Name:</strong> <span id="clientDetailFamilyMember"></span></p>
+                        <p><strong>Email:</strong> <span id="clientDetailEmail"></span></p>
+                        <p><strong>Contact Number:</strong> <span id="clientDetailContact"></span></p>
+                        <p><strong>Occupation:</strong> <span id="clientDetailOccupation"></span></p>
+                        <p><strong>Notes:</strong> <span id="clientDetailNotes"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Resume</h6>
+                        <iframe id="clientDetailMedicalReport" src="" width="100%" height="600px"
+                            style="border:1px solid #ccc;"></iframe>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="clientModalFooter">
+                <button type="button" class="btn btn-success" id="clientApproveBtn" onclick="approveClientApplication()"
+                    style="display:none;">Approve</button>
+                <button type="button" class="btn btn-danger" id="clientRejectBtn" onclick="rejectClientApplication()"
+                    style="display:none;">Decline</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Client Application Variables
+        let currentApplicationId = '';
+        let currentApplicantName = '';
+        let currentApplicantEmail = '';
+        let currentDateOfBirth = '';
+
+        // Client Application Functions
+        function showClientDetails(applicationId, name, dateOfBirth, unused2, notes, email, contact, occupation, status, resumeUrl) {
+            currentApplicationId = applicationId;
+            currentApplicantName = name;
+            currentApplicantEmail = email;
+            currentDateOfBirth = dateOfBirth;
+
+            document.getElementById("clientDetailFamilyMember").innerText = name;
+            document.getElementById("clientDetailNotes").innerText = notes;
+            document.getElementById("clientDetailEmail").innerText = email;
+            document.getElementById("clientDetailContact").innerText = contact;
+            document.getElementById("clientDetailOccupation").innerText = occupation;
+
+            document.getElementById("clientDetailMedicalReport").src = "/file/report123.pdf";
+
+            const approveBtn = document.getElementById("clientApproveBtn");
+            const rejectBtn = document.getElementById("clientRejectBtn");
+
+            if (status === "Pending") {
+                approveBtn.style.display = "inline-block";
+                rejectBtn.style.display = "inline-block";
+            } else {
+                approveBtn.style.display = "none";
+                rejectBtn.style.display = "none";
+            }
+
+            $('#clientDetailsModal').modal('show');
+        }
+
+        function approveClientApplication() {
+            if (!currentApplicationId) {
+                alert("Error: Application ID not found");
+                return;
+            }
+
+            $('#clientDetailsModal').modal('hide');
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Application/ApproveVolunteerApplication';
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = token.value;
+                form.appendChild(tokenInput);
+            }
+
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'applicationId';
+            idInput.value = currentApplicationId;
+            form.appendChild(idInput);
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'hidden';
+            nameInput.name = 'volunteerName';
+            nameInput.value = currentApplicantName;
+            form.appendChild(nameInput);
+
+            const emailInput = document.createElement('input');
+            emailInput.type = 'hidden';
+            emailInput.name = 'volunteerEmail';
+            emailInput.value = currentApplicantEmail;
+            form.appendChild(emailInput);
+
+            const dobInput = document.createElement('input');
+            dobInput.type = 'hidden';
+            dobInput.name = 'dateOfBirth';
+            dobInput.value = currentDateOfBirth;
+            form.appendChild(dobInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function rejectClientApplication() {
+            if (!currentApplicationId) {
+                alert("Error: Application ID not found");
+                return;
+            }
+
+            $('#clientDetailsModal').modal('hide');
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Application/RejectVolunteerApplication';
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = token.value;
+                form.appendChild(tokenInput);
+            }
+
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'applicationId';
+            idInput.value = currentApplicationId;
+            form.appendChild(idInput);
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'hidden';
+            nameInput.name = 'volunteerName';
+            nameInput.value = currentApplicantName;
+            form.appendChild(nameInput);
+
+            const emailInput = document.createElement('input');
+            emailInput.type = 'hidden';
+            emailInput.name = 'volunteerEmail';
+            emailInput.value = currentApplicantEmail;
+            form.appendChild(emailInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Filter Functions
+        function filterClientTable() {
+            const searchInput = document.getElementById("searchInput").value.toLowerCase();
+            const occupationFilter = document.getElementById("occupationFilter").value.toLowerCase();
+            const statusFilter = document.getElementById("clientStatusFilter").value.toLowerCase();
+            const table = document.getElementById("clientApplicationsTable");
+            const rows = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < rows.length; i++) {
+                const nameCell = rows[i].getElementsByTagName("td")[0];        // Name
+                const occupationCell = rows[i].getElementsByTagName("td")[1];  // Occupation
+                const statusCell = rows[i].getElementsByTagName("td")[3];      // Status
+                const notesCell = rows[i].getElementsByTagName("td")[4];       // Notes
+
+                if (nameCell && occupationCell && statusCell && notesCell) {
+                    const nameText = nameCell.textContent || nameCell.innerText;
+                    const occupationText = occupationCell.textContent || occupationCell.innerText;
+                    const statusText = statusCell.textContent || statusCell.innerText;
+                    const notesText = notesCell.textContent || notesCell.innerText;
+
+                    // Search across multiple fields
+                    const searchMatch = searchInput === "" ||
+                        nameText.toLowerCase().includes(searchInput) ||
+                        occupationText.toLowerCase().includes(searchInput) ||
+                        notesText.toLowerCase().includes(searchInput);
+
+                    const occupationMatch = occupationFilter === "" || occupationText.toLowerCase().includes(occupationFilter);
+                    const statusMatch = statusFilter === "" || statusText.toLowerCase().includes(statusFilter);
+
+                    if (searchMatch && occupationMatch && statusMatch) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function searchClientTable() {
+            filterClientTable(); // Reuse the existing filter logic
+        }
+
+        function clearAllFilters() {
+            // Clear search input
+            document.getElementById("searchInput").value = "";
+            
+            // Reset occupation filter
+            document.getElementById("occupationFilter").selectedIndex = 0;
+            
+            // Reset status filter
+            document.getElementById("clientStatusFilter").selectedIndex = 0;
+            
+            // Reapply filters (which will show all rows since filters are cleared)
+            filterClientTable();
+        }
+    </script>
+}

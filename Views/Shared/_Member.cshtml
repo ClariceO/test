@@ -1,0 +1,183 @@
+﻿@{
+    ViewData["Title"] = "User - Homepage";
+}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>@ViewData["Title"]</title>
+
+    <!-- Bootstrap 4 -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+    <style>
+        /* FullCalendar white body */
+        #calendar {
+            background-color: #ffffff; /* main calendar container */
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Calendar table and headers */
+        .fc {
+            background-color: #ffffff;
+        }
+
+        .fc-theme-standard td,
+        .fc-theme-standard th {
+            background-color: #ffffff;
+        }
+
+        .fc-header-toolbar {
+            background-color: #ffffff;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        /* Remove multi-day event background color if needed */
+        .fc-event-main-frame {
+            background-color: transparent !important;
+        }
+
+        .fc-event-title {
+            display: block;
+            white-space: normal;
+            line-height: 1.2;
+        }
+
+        .navbar-brand img {
+            height: 48px; /* same as Staff navbar */
+            width: auto; /* maintain aspect ratio */
+            object-fit: contain;
+        }
+
+        /* Navbar custom styles */
+        .navbar-custom {
+            background-color: #ffffff;
+            border-bottom: 4px solid #00A5E3;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+            padding: 0.6rem 1.5rem;
+        }
+
+            .navbar-custom .navbar-brand img {
+                height: 48px;
+                width: auto;
+                object-fit: contain;
+            }
+
+            .navbar-custom .nav-link {
+                color: #00A5E3 !important; /* main color */
+                font-weight: 600;
+                padding: 0.75rem 1rem;
+                position: relative;
+                transition: all 0.25s ease;
+            }
+
+                .navbar-custom .nav-link:hover {
+                    color: #008bbf !important; /* slightly darker on hover */
+                }
+
+                .navbar-custom .nav-link::after {
+                    content: "";
+                    position: absolute;
+                    left: 50%;
+                    bottom: 6px;
+                    width: 0;
+                    height: 3px;
+                    background-color: #00A5E3;
+                    border-radius: 2px;
+                    transition: all 0.3s ease;
+                }
+
+                .navbar-custom .nav-link:hover::after {
+                    width: 70%;
+                    left: 15%;
+                }
+
+            .navbar-custom .navbar-toggler {
+                border-color: #00A5E3;
+            }
+
+            .navbar-custom .navbar-toggler-icon {
+                background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba(0,165,227,1)' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+            }
+
+    </style>
+
+</head>
+
+<body>
+    <!-- ===================== NAVBAR ===================== -->
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <a class="navbar-brand" href="@Url.Action("Index", "User")">
+            <img id="logo" src="~/images/MINDS_logo.png" alt="logo">
+        </a>
+
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between" id="navbarNav">
+            <ul class="navbar-nav flex-grow-1">
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="User" asp-action="ScanQR">Scan your Attendance</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="User" asp-action="ViewAllEvents">View My Events</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="User" asp-action="Notifications">
+                        Notifications
+                        <span id="notificationBadge" class="badge badge-danger ml-1" style="display: none;">0</span>
+                    </a>
+                </li>
+                <li class="nav-item ml-auto">
+                    <a class="nav-link" asp-controller="User" asp-action="Logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ===================== PAGE CONTENT ===================== -->
+    <div class="container-fluid">
+        @RenderBody()
+    </div>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <!-- ===================== Notification Badge Script ===================== -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            loadNotificationCount();
+            setInterval(loadNotificationCount, 30000); // refresh every 30 seconds
+        });
+
+        async function loadNotificationCount() {
+            try {
+                const response = await fetch('/User/GetUnreadCount');
+                const count = await response.json();
+
+                const badge = document.getElementById('notificationBadge');
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading notification count:', error);
+            }
+        }
+    </script>
+</body>
+
+</html>

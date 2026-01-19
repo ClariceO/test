@@ -1,0 +1,484 @@
+@{
+    ViewData["Title"] = "User Management";
+    Layout = "~/Views/Shared/_Staff.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/applicationmodal.css" />
+
+@Html.AntiForgeryToken()
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 id="pageTitle"><i class="fas fa-users"></i> User Management</h2>
+        <div>
+            <button type="button" class="btn btn-primary mr-2" id="usersTabBtn" onclick="showUsersTable()">
+                <i class="fas fa-users"></i> View Clients/Volunteers
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="staffTabBtn" onclick="showStaffTable()">
+                <i class="fas fa-user-tie"></i> View Staff
+            </button>
+        </div>
+    </div>
+
+    <!-- Users/Clients Table -->
+    <div id="usersSection">
+        <div class="mt-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="userSearchInput">Search:</label>
+                    <input type="text" id="userSearchInput" onkeyup="searchUsersTable()" class="form-control"
+                        placeholder="Search by name or email...">
+                </div>
+                <div class="col-md-4">
+                    <label for="userStatusFilter">Filter by Status:</label>
+                    <select id="userStatusFilter" onchange="filterUsersTable()" class="form-control">
+                        <option value="">-- All Users --</option>
+                        <option value="active">Active</option>
+                        <option value="deactivated">Deactivated</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn btn-outline-secondary btn-block" onclick="clearUserFilters()">
+                        <i class="fas fa-times-circle"></i> Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <table class="table table-bordered table-striped" id="usersTable">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Last Day of Service</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.Users != null)
+                    {
+                        @foreach (var user in (List<H4G_Project.Models.User>)ViewBag.Users)
+                        {
+                            <tr>
+                                <td>@user.Username</td>
+                                <td>@user.Email</td>
+                                <td>
+                                    <span class="badge badge-info">@(user.Role ?? "N/A")</span>
+                                </td>
+                                <td>
+                                    @if (string.IsNullOrEmpty(user.LastDayOfService))
+                                    {
+                                        <span class="text-muted">Active</span>
+                                    }
+                                    else
+                                    {
+                                        @user.LastDayOfService
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        bool isUserExpired = false;
+                                        if (!string.IsNullOrEmpty(user.LastDayOfService) &&
+                                        DateTime.TryParse(user.LastDayOfService, out DateTime userLastDay))
+                                        {
+                                            isUserExpired = userLastDay.Date <= DateTime.Today;
+                                        }
+                                    }
+                                    @if (isUserExpired)
+                                    {
+                                        <span class="badge badge-danger">Deactivated</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-success">Active</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (string.IsNullOrEmpty(user.LastDayOfService))
+                                    {
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                            onclick="deactivateUser('@user.Email', '@user.Username')">
+                                            <i class="fas fa-user-times"></i> Deactivate
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-success btn-sm"
+                                            onclick="reactivateUser('@user.Email', '@user.Username')">
+                                            <i class="fas fa-user-check"></i> Reactivate
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Staff Table -->
+    <div id="staffSection" style="display: none;">
+        <div class="mt-3">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="staffSearchInput">Search:</label>
+                    <input type="text" id="staffSearchInput" onkeyup="searchStaffTable()" class="form-control"
+                        placeholder="Search by name or email...">
+                </div>
+                <div class="col-md-4">
+                    <label for="staffStatusFilter">Filter by Status:</label>
+                    <select id="staffStatusFilter" onchange="filterStaffTable()" class="form-control">
+                        <option value="">-- All Staff --</option>
+                        <option value="active">Active</option>
+                        <option value="expired">Expired</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn btn-outline-secondary btn-block" onclick="clearStaffFilters()">
+                        <i class="fas fa-times-circle"></i> Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <table class="table table-bordered table-striped" id="staffTable">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Last Day of Service</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (ViewBag.Staff != null)
+                    {
+                        @foreach (var staff in (List<H4G_Project.Models.Staff>)ViewBag.Staff)
+                        {
+                            <tr>
+                                <td>@staff.Username</td>
+                                <td>@staff.Email</td>
+                                <td>
+                                    @if (string.IsNullOrEmpty(staff.LastDayOfService))
+                                    {
+                                        <span class="text-muted">No expiration</span>
+                                    }
+                                    else
+                                    {
+                                        @staff.LastDayOfService
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        bool isExpired = false;
+                                        if (!string.IsNullOrEmpty(staff.LastDayOfService) &&
+                                        DateTime.TryParse(staff.LastDayOfService, out DateTime lastDay))
+                                        {
+                                            isExpired = lastDay.Date < DateTime.Today;
+                                        }
+                                    }
+                                    @if (isExpired)
+                                    {
+                                        <span class="badge badge-danger">Expired</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-success">Active</span>
+                                    }
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-primary btn-sm"
+                                        onclick="editStaffLastDay('@staff.Email', '@staff.Username', '@staff.LastDayOfService')">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Staff Last Day Modal -->
+<div class="modal fade" id="editStaffModal" tabindex="-1" role="dialog" aria-labelledby="editStaffModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editStaffModalLabel">Edit Staff Last Day of Service</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editStaffForm">
+                    <input type="hidden" id="staffEmail" />
+                    <div class="form-group">
+                        <label for="staffName">Staff Name:</label>
+                        <input type="text" class="form-control" id="staffName" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="staffEmailDisplay">Email:</label>
+                        <input type="text" class="form-control" id="staffEmailDisplay" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastDayOfService">Last Day of Service:</label>
+                        <input type="date" class="form-control" id="lastDayOfService" min="">
+                        <small class="form-text text-muted">Leave empty for no expiration date. Must be today or a
+                            future date.</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveStaffLastDay()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Set minimum date to today
+        document.addEventListener('DOMContentLoaded', function () {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('lastDayOfService').setAttribute('min', today);
+        });
+
+        // Toggle between users and staff tables
+        function showUsersTable() {
+            document.getElementById('usersSection').style.display = 'block';
+            document.getElementById('staffSection').style.display = 'none';
+            document.getElementById('pageTitle').innerHTML = '<i class="fas fa-users"></i> User Management';
+
+            // Update button states
+            document.getElementById('usersTabBtn').classList.remove('btn-outline-primary');
+            document.getElementById('usersTabBtn').classList.add('btn-primary');
+            document.getElementById('staffTabBtn').classList.remove('btn-primary');
+            document.getElementById('staffTabBtn').classList.add('btn-outline-secondary');
+        }
+
+        function showStaffTable() {
+            document.getElementById('usersSection').style.display = 'none';
+            document.getElementById('staffSection').style.display = 'block';
+            document.getElementById('pageTitle').innerHTML = '<i class="fas fa-user-tie"></i> Staff Management';
+
+            // Update button states
+            document.getElementById('staffTabBtn').classList.remove('btn-outline-secondary');
+            document.getElementById('staffTabBtn').classList.add('btn-primary');
+            document.getElementById('usersTabBtn').classList.remove('btn-primary');
+            document.getElementById('usersTabBtn').classList.add('btn-outline-primary');
+        }
+
+        // Users table filtering
+        function filterUsersTable() {
+            const searchInput = document.getElementById("userSearchInput").value.toLowerCase();
+            const statusFilter = document.getElementById("userStatusFilter").value.toLowerCase();
+            const table = document.getElementById("usersTable");
+            const rows = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < rows.length; i++) {
+                const nameCell = rows[i].getElementsByTagName("td")[0];
+                const emailCell = rows[i].getElementsByTagName("td")[1];
+                const statusCell = rows[i].getElementsByTagName("td")[4];
+
+                if (nameCell && emailCell && statusCell) {
+                    const nameText = nameCell.textContent || nameCell.innerText;
+                    const emailText = emailCell.textContent || emailCell.innerText;
+                    const statusText = statusCell.textContent || statusCell.innerText;
+
+                    const searchMatch = searchInput === "" ||
+                        nameText.toLowerCase().includes(searchInput) ||
+                        emailText.toLowerCase().includes(searchInput);
+
+                    const statusMatch = statusFilter === "" || statusText.toLowerCase().includes(statusFilter);
+
+                    if (searchMatch && statusMatch) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function searchUsersTable() {
+            filterUsersTable();
+        }
+
+        function clearUserFilters() {
+            document.getElementById("userSearchInput").value = "";
+            document.getElementById("userStatusFilter").selectedIndex = 0;
+            filterUsersTable();
+        }
+
+        // Staff table filtering
+        function filterStaffTable() {
+            const searchInput = document.getElementById("staffSearchInput").value.toLowerCase();
+            const statusFilter = document.getElementById("staffStatusFilter").value.toLowerCase();
+            const table = document.getElementById("staffTable");
+            const rows = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < rows.length; i++) {
+                const nameCell = rows[i].getElementsByTagName("td")[0];
+                const emailCell = rows[i].getElementsByTagName("td")[1];
+                const statusCell = rows[i].getElementsByTagName("td")[3];
+
+                if (nameCell && emailCell && statusCell) {
+                    const nameText = nameCell.textContent || nameCell.innerText;
+                    const emailText = emailCell.textContent || emailCell.innerText;
+                    const statusText = statusCell.textContent || statusCell.innerText;
+
+                    const searchMatch = searchInput === "" ||
+                        nameText.toLowerCase().includes(searchInput) ||
+                        emailText.toLowerCase().includes(searchInput);
+
+                    const statusMatch = statusFilter === "" || statusText.toLowerCase().includes(statusFilter);
+
+                    if (searchMatch && statusMatch) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function searchStaffTable() {
+            filterStaffTable();
+        }
+
+        function clearStaffFilters() {
+            document.getElementById("staffSearchInput").value = "";
+            document.getElementById("staffStatusFilter").selectedIndex = 0;
+            filterStaffTable();
+        }
+
+        // Deactivate user
+        function deactivateUser(email, username) {
+            if (confirm(`Are you sure you want to deactivate user "${username}"? This will set their last day of service to today.`)) {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                fetch('/User/DeactivateUser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `email=${encodeURIComponent(email)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('User deactivated successfully');
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deactivating the user');
+                    });
+            }
+        }
+
+        // Reactivate user
+        function reactivateUser(email, username) {
+            if (confirm(`Are you sure you want to reactivate user "${username}"? This will clear their last day of service.`)) {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                fetch('/User/ReactivateUser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': token
+                    },
+                    body: `email=${encodeURIComponent(email)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('User reactivated successfully');
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while reactivating the user');
+                    });
+            }
+        }
+
+        // Edit staff last day
+        function editStaffLastDay(email, username, currentLastDay) {
+            document.getElementById('staffEmail').value = email;
+            document.getElementById('staffName').value = username;
+            document.getElementById('staffEmailDisplay').value = email;
+            document.getElementById('lastDayOfService').value = currentLastDay || '';
+
+            $('#editStaffModal').modal('show');
+        }
+
+        function saveStaffLastDay() {
+            const email = document.getElementById('staffEmail').value;
+            const lastDayOfService = document.getElementById('lastDayOfService').value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            fetch('/User/UpdateStaffLastDayOfService', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `email=${encodeURIComponent(email)}&lastDayOfService=${encodeURIComponent(lastDayOfService)}&__RequestVerificationToken=${encodeURIComponent(token)}`
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Staff last day of service updated successfully');
+                        $('#editStaffModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating the staff');
+                });
+        }
+    </script>
+}

@@ -1,0 +1,184 @@
+﻿@{
+    ViewData["Title"] = "User";
+    var successMessage = TempData["SuccessMessage"] as string;
+    Layout = "~/Views/Shared/_Staff.cshtml";
+    string message = TempData["Message"]?.ToString();
+}
+
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+
+<div class="container mt-4">
+
+    <h3 class="mb-3">Staff Dashboard</h3>
+
+    <!-- Success/Error Messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Participant Management Section -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>👥 Participant Management</h5>
+                </div>
+                <div class="card-body">
+                    <p>Manage participant engagement types and settings.</p>
+                    <a href="/Staff/ManageEngagement" class="btn btn-primary">Manage Participant Engagement</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mb-3">Calendar</h3>
+
+    <!-- Calendar Container -->
+    <div id="calendar"></div>
+
+</div>
+
+@section Scripts {
+
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+    <!-- SweetAlert -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            var calendarEl = document.getElementById('calendar');
+
+                    var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: 'auto',
+
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+
+            events: '/Calendar/GetEvents',
+
+            // Prevent events from spanning multiple days visually
+            eventDisplay: 'block',
+
+            // Two-line event content
+            eventContent: function(arg) {
+                const start = arg.event.start;
+                const end = arg.event.end;
+
+                // Format time
+                const startTime = start ? new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+                const endTime = end ? new Date(end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+
+                const el = document.createElement('div');
+                el.style.backgroundColor = '#56baed';
+                el.style.color = '#fff';
+                el.style.padding = '2px 4px';
+                el.style.marginBottom = '2px';
+                el.style.borderRadius = '4px';
+                el.style.fontSize = '12px';
+                el.style.fontWeight = '500';
+                el.style.lineHeight = '1.2';
+                el.style.whiteSpace = 'normal'; // allow text to wrap
+                el.style.wordBreak = 'break-word';
+
+                // Two-line content: time first, name second
+                el.innerHTML = `<div>${startTime}${endTime ? ' - ' + endTime : ''}</div>
+                                <div style="font-weight:600;">${arg.event.title}</div>`;
+
+                return { domNodes: [el] };
+            },
+
+            dateClick: function(info) {
+                Swal.fire({
+                    title: 'Date selected',
+                    text: info.dateStr,
+                    icon: 'info'
+                });
+            },
+
+            eventClick: function(info) {
+                const eventId = info.event.id;
+                const eventTitle = info.event.title;
+                const eventDate = info.event.startStr;
+                showEventDetails(eventId, eventTitle, eventDate);
+            }
+        });
+
+
+            calendar.render();
+
+            // Helper function to show event details for staff
+            async function showEventDetails(eventId, eventTitle, eventDate) {
+                try {
+                    const response = await fetch(`/Calendar/GetEventDetails?id=${eventId}`);
+                    const eventDetails = await response.json();
+
+                    const eventImage = eventDetails.eventPhoto && eventDetails.eventPhoto.trim() !== ''
+                        ? `<img src="${eventDetails.eventPhoto}" alt="${eventDetails.name}" style="width:100%; max-height:200px; object-fit:cover; border-radius:8px; margin-bottom:15px;" />`
+                        : '';
+
+                    const eventEndTime = eventDetails.end
+                        ? `<p><strong>End:</strong> ${eventDetails.end}</p>`
+                        : '';
+
+                    Swal.fire({
+                        title: eventDetails.name,
+                        html: `
+                            <div style="text-align:left; max-height:60vh; overflow-y:auto; padding:10px;">
+                                ${eventImage}
+                                <p><strong>Start:</strong> ${eventDetails.start}</p>
+                                ${eventEndTime}
+                                <div style="margin:15px 0;">
+                                    <strong>Details:</strong>
+                                    <p style="margin-top:8px; line-height:1.5; color:#666;">
+                                        ${eventDetails.details || 'No additional details available.'}
+                                    </p>
+                                </div>
+                            </div>
+                        `,
+                        width: '600px',
+                        confirmButtonText: 'Close',
+                        confirmButtonColor: '#6c757d',
+                        focusConfirm: false,
+                        allowOutsideClick: true
+                    });
+                } catch (error) {
+                    console.error('Error fetching event details:', error);
+                    Swal.fire('Error', 'Could not load event details', 'error');
+                }
+            }
+        });
+
+        @* Show success message *@
+        @if (!string.IsNullOrEmpty(successMessage))
+        {
+                <text>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '@successMessage'
+                });
+                </text>
+        }
+    </script>
+}

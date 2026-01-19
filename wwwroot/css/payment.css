@@ -1,0 +1,383 @@
+﻿:root {
+    /* Colors */
+
+    --onyx: hsl(0, 0%, 25%);
+    --azure: hsl(219, 77%, 60%);
+    --white: hsl(0, 0%, 100%);
+    --platinum: hsl(0, 0%, 91%);
+    --gainsboro: hsl(0, 0%, 90%);
+    --red-salsa: hsl(0, 77%, 60%);
+    --dim-gray: hsl(0, 0%, 39%);
+    --davys-gray: hsl(0, 0%, 30%);
+    --spanish-gray: hsl(0, 0%, 62%);
+    --quick-silver: hsl(0, 0%, 64%);
+    /* Typography */
+
+    --fs-28: 28px;
+    --fs-24: 24px;
+    --fs-18: 18px;
+    --fs-15: 15px;
+    --fs-14: 14px;
+    --fw-5: 500;
+    --fw-6: 600;
+    --fw-7: 700;
+    /* Others */
+
+    --px: 60px;
+    --radius: 5px;
+}
+
+/* Reset  */
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-family: 'Source Sans 3', sans-serif;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button {
+    border: none;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+}
+
+ion-icon, span {
+    display: inline-block;
+}
+
+label, img {
+    display: block;
+    font-weight: 500;
+}
+
+input {
+    font: inherit;
+    width: 100%;
+    border: none;
+}
+
+    input:focus {
+        outline: 2px solid var(--azure);
+    }
+
+    /* Remove number input up & down button */
+
+    input::-webkit-inner-spin-button,
+    input::-webkit-outer-spin-button {
+        appearance: none;
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+/* Custom scrollbar style */
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsl(0, 0%, 80%);
+    border-radius: 10px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: hsl(0, 0%, 70%);
+    }
+
+/* main container  */
+
+
+.container {
+    max-width: 1440px;
+    min-height: 100vh;
+    margin: auto;
+    flex-direction: column;
+    display: flex;
+}
+
+.item-flex {
+    display: flex;
+    flex-wrap:wrap;
+}
+/* checkout section style */
+
+.checkout {
+    width: 70%;
+    padding: 40px var(--px);
+    background: var(--white);
+    border-right: 1px solid var(--gainsboro);
+}
+
+.section-heading {
+    color: var(--onyx);
+    margin-bottom: 30px;
+    font-size: var(--fs-24);
+    font-weight: var(--fw-5);
+}
+
+.payment-form {
+    margin-bottom: 40px;
+}
+.container {
+    width: 100%;
+    background: white;
+    padding: 25px 30px;
+    border-radius: 5px;
+}
+
+    .container form .parcel-detail {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+form .parcel-detail .input-container {
+    width: calc(100% / 2 - 20px);
+    margin: 20px 0 12px 0;
+}
+
+.parcel-detail .input-container .label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.parcel-detail .input-container input {
+    height: 45px;
+    width: 100%;
+    outline: none;
+    border-radius: 5px;
+    border: 1px solid #CCC;
+    padding-left: 15px;
+    font-size: 15px;
+    border-bottom-width: 2px;
+    transition: all 0.3s ease;
+}
+
+    .parcel-detail .input-container input:focus {
+        border-color: #9b59b6;
+    }
+
+
+.label-default {
+    padding-left: 10px;
+    margin-bottom: 5px;
+    font-size: var(--fs-14);
+    color: var(--spanish-gray);
+}
+
+.input-default {
+    background: var(--platinum);
+    border-radius: var(--radius);
+    color: var(--davys-gray);
+}
+
+.payment-form input {
+    font-size: var(--fs-18);
+    font-weight: var(--fw-5);
+}
+
+.btn {
+    border-radius: var(--radius);
+}
+
+    .btn:active {
+        transform: scale(0.99);
+    }
+
+    .btn:focus {
+        color: var(--white);
+        background: var(--azure);
+        outline: 2px solid var(--azure);
+        outline-offset: 2px;
+    }
+
+.btn-primary {
+    background: var(--azure);
+    font-weight: var(--fw-5);
+    color: var(--white);
+    padding: 13px 45px;
+}
+
+    .btn-primary b {
+        margin-right: 10px;
+    }
+.form-check {
+    display: inline-flex !important;
+    margin-right: 5em;
+}
+.form-check-input{
+    margin-right: 1em;
+}
+
+button{
+    width:100%;
+}
+
+/* cart section style */
+
+.discount-token {
+    padding: 40px var(--px);
+    border-top: 1px solid var(--gainsboro);
+    border-bottom: 1px solid var(--gainsboro);
+}
+
+.wrapper-flex {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+    .wrapper-flex input {
+        padding: 12px 15px;
+        font-weight: var(--fw-6);
+        letter-spacing: 2px;
+    }
+
+.btn-outline {
+    padding: 10px 25px;
+    border: 1px solid var(--azure);
+    color: var(--azure);
+}
+
+    .btn-outline:hover {
+        background: var(--azure);
+        color: var(--white);
+    }
+
+.amount {
+    padding: 40px var(--px);
+}
+
+    .amount > div {
+        display: flex;
+        justify-content: space-between;
+    }
+
+        .amount > div:not(:last-child) {
+            margin-bottom: 10px;
+        }
+
+    .amount .total {
+        font-size: var(--fs-18);
+        font-weight: var(--fw-7);
+        color: var(--onyx);
+    }
+
+.cart {
+    width: 30%;
+    padding: 40px var(--px);
+    background: var(--white);
+}
+
+.cart-item-box {
+    margin-bottom: auto;
+}
+/* RESPONSIVE */
+
+@media (max-width: 1200px) {
+
+    .item-flex {
+        flex-direction: column-reverse;
+    }
+
+    /* checkout section responsive */
+
+    .checkout {
+        width: 100%;
+        border-right: none;
+    }
+
+    .btn-primary {
+        width: 100%;
+    }
+
+    /* cart section responsive */
+
+    .cart {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+        border-bottom: 1px solid var(--gainsboro);
+    }
+
+        .cart .wrapper {
+            margin-top: auto;
+        }
+
+        .cart .cart-item-box {
+            border-right: 1px solid var(--gainsboro);
+            margin-bottom: 0;
+        }
+
+    .discount-token {
+        border-top: none;
+    }
+}
+
+
+
+
+
+@media (max-width: 768px) {
+
+    :root {
+        --px: 40px;
+    }
+
+    .cart {
+        grid-template-columns: 1fr;
+    }
+
+    .discount-token {
+        border-top: 1px solid var(--gainsboro);
+    }
+
+    .wrapper-flex {
+        gap: 20px;
+    }
+}
+
+
+
+
+
+@media (max-width: 567px) {
+
+    :root {
+        --px: 20px;
+    }
+
+    .payment-method,
+    .input-flex {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+        .payment-method .method {
+            width: 100%;
+        }
+
+        .input-flex .expire-date,
+        .input-flex .cvv {
+            width: 100%;
+        }
+
+    .expire-date .input-flex {
+        flex-direction: row;
+    }
+}

@@ -1,0 +1,43 @@
+@model List<H4G_Project.Models.Event>
+
+@{
+    ViewData["Title"] = "All Events";
+    Layout = "~/Views/Shared/_Member.cshtml";
+}
+
+<div class="container mt-4">
+    <h3 class="mb-4">All Events</h3>
+
+    @if (Model == null || !Model.Any())
+    {
+        <p>No events found.</p>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var ev in Model.OrderBy(e => e.Start.ToDateTime()))
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">@ev.Name</h5>
+                            <p class="card-text">
+                                @if (!string.IsNullOrEmpty(ev.Details))
+                                {
+                                    <strong>Details:</strong> @ev.Details <br />
+                                }
+                                <strong>Start:</strong> @ev.Start.ToDateTime().ToString("dd MMM yyyy HH:mm") <br />
+                                <strong>End:</strong> @(ev.End != null ? ev.End?.ToDateTime().ToString("dd MMM yyyy HH:mm") : "-") <br />
+                                <strong>Registration Due:</strong> @(ev.RegistrationDueDate != null ? ev.RegistrationDueDate.ToDateTime().ToString("dd MMM yyyy") : "-") <br />
+                                <strong>Max Participants:</strong> @(ev.MaxParticipants != null ? ev.MaxParticipants.ToString() : "-")
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section Scripts {
+}

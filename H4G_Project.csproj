@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>f50d0b7e-ee05-456f-9ba2-397fa645422b</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FirebaseAdmin" Version="3.4.0" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.73.0" />
+    <PackageReference Include="Google.Cloud.Firestore" Version="3.5.0" />
+    <PackageReference Include="Google.Cloud.Storage.V1" Version="4.13.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.16" />
+    <PackageReference Include="QRCoder" Version="1.7.0" />
+    <PackageReference Include="agora_rtc_sdk" Version="4.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\images\EventImg\" />
+    <Folder Include="wwwroot\lib\microsoft\" />
+  </ItemGroup>
+
+</Project>

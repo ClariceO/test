@@ -1,0 +1,110 @@
+﻿@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins',sans-serif;
+    position: relative;
+}
+
+.hidden {
+    display: none;
+}
+
+html {
+    position: relative;
+}
+
+header {
+    position: relative;
+}
+
+.container {
+    width: 100%;
+    background: white;
+    padding: 25px 30px;
+    border-radius: 5px;
+}
+
+    .container form .parcel-detail {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+form .parcel-detail .input-container {
+    width: calc(100% / 3 - 20px);
+    margin: 20px 0 12px 0;
+}
+
+.parcel-detail .input-container .label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.parcel-detail .input-container .input {
+    height: 45px;
+    width: 100%;
+    outline: none;
+    border-radius: 5px;
+    border: 1px solid #CCC;
+    padding-left: 15px;
+    font-size: 15px;
+    border-bottom-width: 2px;
+    transition: all 0.3s ease;
+}
+
+    .parcel-detail .input-container .input:focus {
+        border-color: #9b59b6;
+    }
+
+form .create-parcel-btn {
+    height: 45px;
+    margin: 45px 0;
+}
+
+    form .create-parcel-btn input {
+        height: 100%;
+        width: 100%;
+        background: #2196F3;
+        color: #FFFFFF;
+        font-size: 18px;
+        letter-spacing: 1px;
+        border-radius: 5px;
+    }
+
+        form .create-parcel-btn input:hover {
+            background: #0D47A1;
+        }
+footer {
+    width: 100%;
+}
+
+.col-form-label{
+    font-weight: bold;
+}
+
+/* Media queries */
+@media (max-width:987px) {
+    .container {
+        max-width: 100%;
+    }
+
+    form .parcel-detail .input-container {
+        width: calc(100% / 2 - 20px);
+        margin: 20px 0 12px 0;
+    }
+}
+
+@media (max-width:540px) {
+    .container {
+        max-width: 100%;
+    }
+
+    form .parcel-detail .input-container {
+        margin-bottom: 15px;
+        width: 100%;
+    }
+}

@@ -1,0 +1,687 @@
+﻿@model H4G_Project.Models.User
+
+@{
+    ViewData["Title"] = "User Calendar";
+    Layout = "~/Views/Shared/_Member.cshtml";
+    var successMessage = TempData["SuccessMessage"] as string;
+}
+
+<!-- FullCalendar CSS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+
+<!-- SweetAlert CSS -->
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.min.css" rel="stylesheet" />
+
+<style>
+    body {
+        background-color: #F5F9FC; /* light blue-grey page background */
+    }
+</style>
+
+
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h3 class="mb-0">Event Calendar</h3>
+        </div>
+        <div class="col-md-4 text-right">
+            @if (Model?.Role?.ToLower() == "participant")
+            {
+                <div class="card">
+                    <div class="card-body py-2">
+                        <small class="text-muted">Your Engagement Type:</small><br>
+                        <span class="badge badge-info">@(Model.EngagementType ?? "Ad hoc engagement")</span>
+                        
+                        @if (ViewBag.EngagementUsage != null)
+                        {
+                            <hr class="my-2">
+                            <small class="text-muted">Weekly Usage:</small><br>
+                            <div class="d-flex justify-content-between align-items-center">
+                                @if (ViewBag.EngagementUsage.Limit == int.MaxValue)
+                                {
+                                    <span class="small">@ViewBag.EngagementUsage.CurrentCount events (Unlimited)</span>
+                                    <span class="badge badge-success badge-sm">Unlimited</span>
+                                }
+                                else
+                                {
+                                    <span class="small">@ViewBag.EngagementUsage.CurrentCount / @ViewBag.EngagementUsage.Limit events</span>
+                                    @if (ViewBag.EngagementUsage.CanRegister)
+                                    {
+                                        <span class="badge badge-success badge-sm">Available</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-warning badge-sm">Limit Reached</span>
+                                    }
+                                }
+                            </div>
+                            @if (ViewBag.EngagementUsage.CurrentCount > 0 && ViewBag.EngagementUsage.Limit != int.MaxValue)
+                            {
+                                <div class="progress mt-1" style="height: 4px;">
+                                    <div class="progress-bar @(ViewBag.EngagementUsage.CanRegister ? "bg-success" : "bg-warning")" 
+                                         style="width: @(((double)ViewBag.EngagementUsage.CurrentCount / ViewBag.EngagementUsage.Limit) * 100)%"></div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+    <div id="calendar"></div>
+</div>
+
+@section Scripts {
+
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+    <!-- SweetAlert JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+
+    <!-- Anti-forgery token (important for POST) -->
+    @Html.AntiForgeryToken()
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            var calendarEl = document.getElementById('calendar');
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                height: 'auto',
+
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+
+                events: '/Calendar/GetEvents',
+
+                eventDisplay: 'block',
+
+            // Two-line event content
+            eventContent: function(arg) {
+                const start = arg.event.start;
+                const end = arg.event.end;
+
+                // Format time
+                const startTime = start ? new Date(start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+                const endTime = end ? new Date(end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+
+                const el = document.createElement('div');
+                el.style.backgroundColor = '#56baed';
+                el.style.color = '#fff';
+                el.style.padding = '2px 4px';
+                el.style.marginBottom = '2px';
+                el.style.borderRadius = '4px';
+                el.style.fontSize = '12px';
+                el.style.fontWeight = '500';
+                el.style.lineHeight = '1.2';
+                el.style.whiteSpace = 'normal'; // allow text to wrap
+                el.style.wordBreak = 'break-word';
+
+                // Two-line content: time first, name second
+                el.innerHTML = `<div>${startTime}${endTime ? ' - ' + endTime : ''}</div>
+                                <div style="font-weight:600;">${arg.event.title}</div>`;
+
+                return { domNodes: [el] };
+            },
+
+                dateClick: function (info) {
+                    Swal.fire({
+                        title: 'Date selected',
+                        text: info.dateStr,
+                        icon: 'info'
+                    });
+                },
+
+                eventClick: function (info) {
+
+                    const eventId = info.event.id;
+                    const eventTitle = info.event.title;
+                    const eventDate = info.event.startStr;
+
+                    // Show event details first, then allow registration
+                    showEventDetails(eventId, eventTitle, eventDate);
+                }
+            });
+
+            calendar.render();
+
+            // Helper functions defined outside calendar object
+            async function showEventDetails(eventId, eventTitle, eventDate, cachedEventDetails = null) {
+                try {
+                    let eventDetails;
+                    
+                    if (cachedEventDetails) {
+                        // Use cached data - no database call needed
+                        eventDetails = cachedEventDetails;
+                    } else {
+                        // Fetch full event details from server (first time only)
+                        const response = await fetch(`/Calendar/GetEventDetails?id=${eventId}`);
+                        eventDetails = await response.json();
+                    }
+
+                    const eventImage = eventDetails.eventPhoto && eventDetails.eventPhoto.trim() !== '' 
+                        ? `<img src="${eventDetails.eventPhoto}" alt="${eventDetails.name}" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 15px;" />`
+                        : '';
+
+                    const eventEndTime = eventDetails.end 
+                        ? `<p><strong>End:</strong> ${eventDetails.end}</p>`
+                        : '';
+
+                    Swal.fire({
+                        title: eventDetails.name,
+                        html: `
+                            <div style="text-align: left; max-height: 60vh; overflow-y: auto; padding: 10px;">
+                                ${eventImage}
+                                <p><strong>Start:</strong> ${eventDetails.start}</p>
+                                ${eventEndTime}
+                                <div style="margin: 15px 0;">
+                                    <strong>Details:</strong>
+                                    <p style="margin-top: 8px; line-height: 1.5; color: #666;">
+                                        ${eventDetails.details || 'No additional details available.'}
+                                    </p>
+                                </div>
+                            </div>
+                        `,
+                        width: '600px',
+                        showCancelButton: true,
+                        confirmButtonText: 'Register for Event',
+                        cancelButtonText: 'Close',
+                        confirmButtonColor: '#28a745',
+                        focusConfirm: false,
+                        allowOutsideClick: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Get user role and proceed to registration, pass cached data
+                            const userRole = '@ViewBag.UserRole';
+                            showRegistrationForm(eventId, eventTitle, eventDate, userRole, eventDetails);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error fetching event details:', error);
+                    Swal.fire('Error', 'Could not load event details', 'error');
+                }
+            }
+
+            function showRegistrationForm(eventId, eventTitle, eventDate, role, cachedEventDetails = null) {
+                    // Normalize role to have first letter capitalized
+                    role = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+                    
+                    // Show registration form based on role
+                    const volunteerFields = role === 'Volunteer' ? `
+                        <div class="form-group text-left mt-2">
+                            <label>Last 4 characters of NRIC *</label>
+                            <input type="text" id="NricLast4" class="form-control" maxlength="4" placeholder="e.g., 123A" required />
+                            <small class="text-muted">Enter last 4 characters (e.g., 123A)</small>
+                        </div>
+                        <div class="form-group text-left mt-2">
+                            <label>Gender *</label>
+                            <select id="Gender" class="form-control" required>
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group text-left mt-2">
+                            <label>Date of Birth *</label>
+                            <input type="date" id="DateOfBirth" class="form-control" value="@Model.DateOfBirth" readonly required />
+                            <small class="text-muted">Pre-filled from your account</small>
+                        </div>
+                        <div class="form-group text-left mt-2">
+                            <label>Mobile Number *</label>
+                            <input type="tel" id="MobileNumber" class="form-control" maxlength="8" placeholder="12345678" value="@Model.PhoneNumber" readonly required />
+                            <small class="text-muted">Pre-filled from your account</small>
+                        </div>
+                        <div class="form-group text-left mt-2">
+                            <label>Citizenship Type *</label>
+                            <select id="CitizenshipType" class="form-control" required>
+                                <option value="">Select Citizenship Type</option>
+                                <option value="Singaporean">Singaporean</option>
+                                <option value="Singapore Permanent Resident">Singapore Permanent Resident</option>
+                                <option value="Long Term Visit Pass">Long Term Visit Pass</option>
+                                <option value="Employment Pass/S Pass">Employment Pass/S Pass</option>
+                            </select>
+                        </div>
+                        <div class="form-group text-left mt-3">
+                            <h6><strong>Declaration & Consent (All Required) *</strong></h6>
+                            <div class="form-check text-left mt-2">
+                                <input type="checkbox" id="SecurityScreening" class="form-check-input" required />
+                                <label class="form-check-label" for="SecurityScreening">
+                                    <strong>Security Screening *:</strong> I agree to give consent for MINDS to forward my particulars to the Ministry of Social and Family Development (MSF) for security screening in protection of the safety and wellbeing of our clients should I volunteer with MINDS.
+                                </label>
+                            </div>
+                            <div class="form-check text-left mt-2">
+                                <input type="checkbox" id="Confidentiality" class="form-check-input" required />
+                                <label class="form-check-label" for="Confidentiality">
+                                    <strong>Confidentiality *:</strong> I agree to maintain strict confidentiality pertaining to client information and all matters during the course of my volunteering activities.
+                                </label>
+                            </div>
+                            <div class="form-check text-left mt-2">
+                                <input type="checkbox" id="CodeOfConduct" class="form-check-input" required />
+                                <label class="form-check-label" for="CodeOfConduct">
+                                    <strong>Volunteer Code of Conduct *:</strong> I agree to the <a href="https://drive.google.com/file/d/1L6IqfJdpk-7WszKwaFpxlmNHVegqx0xW/view" target="_blank">Volunteer Code of Conduct</a> and agree to abide by the conditions for my volunteering activity.
+                                </label>
+                            </div>
+                            <div class="form-check text-left mt-2">
+                                <input type="checkbox" id="PDPA" class="form-check-input" required />
+                                <label class="form-check-label" for="PDPA">
+                                    <strong>Personal Data Protection Act (PDPA) *:</strong> I consent to MINDS collecting, using, disclosing and/or processing my personal data for volunteer service administration and related activities.
+                                </label>
+                            </div>
+                            <small class="text-danger mt-2" id="declarationError" style="display:none;">Please agree to all declarations to proceed</small>
+                        </div>
+                    ` : '';
+
+                    const participantFields = role === 'Participant' ? `
+                        <div class="form-group text-left mt-2">
+                            <label>Phone Number *</label>
+                            <input type="tel" id="PhoneNumber" class="form-control" 
+                                   placeholder="12345678" maxlength="8" value="@Model.PhoneNumber" readonly required />
+                            <small class="text-muted">Pre-filled from your account</small>
+                            <small class="text-danger" id="phoneError" style="display:none;">Please enter exactly 8 digits only</small>
+                        </div>
+                        <div class="form-group text-left mt-2">
+                            <label>Dietary Requirements</label>
+                            <textarea id="DietaryRequirements" class="form-control" rows="2" placeholder="e.g., Vegetarian, Allergies"></textarea>
+                        </div>
+                        <div class="form-group text-left mt-2">
+                            <label>Emergency Contact Name *</label>
+                            <input type="text" id="EmergencyContactName" class="form-control" placeholder="Full name of emergency contact" required />
+                            <small class="text-danger" id="emergencyContactNameError" style="display:none;">Emergency contact name is required</small>
+                        </div>
+                        <div class="form-group text-left mt-2">
+                            <label>Emergency Contact Number *</label>
+                            <input type="tel" id="EmergencyContactNumber" class="form-control" 
+                                   placeholder="12345678" maxlength="8" required />
+                            <small class="text-muted">8 digits only</small>
+                            <small class="text-danger" id="emergencyContactError" style="display:none;">Please enter exactly 8 digits only</small>
+                        </div>
+                    ` : '';
+
+                    const roleInfo = role === 'Volunteer' 
+                        ? '<p class="text-success">Thank you for volunteering! Registration is free.</p>'
+                        : '<p class="text-info">Registration fee: $50.00</p>';
+
+                    Swal.fire({
+                        title: `Register as ${role}`,
+                        html: `
+                            <div style="max-height: 60vh; overflow-y: auto; padding: 10px;">
+                                ${roleInfo}
+                                <form id="registerForm">
+                                    <input type="hidden" id="EventId" value="${eventId}" />
+                                    <input type="hidden" id="Role" value="${role}" />
+
+                                    <div class="form-group text-left">
+                                        <label>Event</label>
+                                        <input class="form-control" value="${eventTitle}" readonly />
+                                    </div>
+
+                                    <div class="form-group text-left mt-2">
+                                        <label>Date</label>
+                                        <input class="form-control" value="${eventDate}" readonly />
+                                    </div>
+
+                                    <div class="form-group text-left mt-2">
+                                        <label>Full Name *</label>
+                                        <input type="text" id="FullName" class="form-control" value="@Model.Username" required />
+                                        <small class="text-muted">Pre-filled from your account (you can edit this)</small>
+                                        <small class="text-danger" id="nameError" style="display:none;">Please enter your full name</small>
+                                    </div>
+
+                                    <div class="form-group text-left mt-2">
+                                        <label>Email *</label>
+                                        <input type="email" id="Email" class="form-control" value="@Model.Email" readonly required />
+                                        <small class="text-muted">Pre-filled from your account</small>
+                                    </div>
+
+                                    ${volunteerFields}
+                                    ${participantFields}
+                                </form>
+                            </div>
+                        `,
+                        width: '600px',
+                        showCancelButton: true,
+                        confirmButtonText: 'Submit Registration',
+                        cancelButtonText: 'Back',
+                        focusConfirm: false,
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            // Add real-time validation
+                            const nameInput = document.getElementById('FullName');
+                            const nameError = document.getElementById('nameError');
+
+                            nameInput.addEventListener('blur', function() {
+                                if (!this.value.trim()) {
+                                    nameError.style.display = 'block';
+                                    this.classList.add('is-invalid');
+                                } else {
+                                    nameError.style.display = 'none';
+                                    this.classList.remove('is-invalid');
+                                }
+                            });
+
+                            // Add validation for volunteer mobile number and declarations
+                            if (role === 'Volunteer') {
+                                // Mobile number is now readonly and prefilled, so no validation needed
+                                
+                                // Add real-time validation for declarations
+                                const declarationCheckboxes = ['SecurityScreening', 'Confidentiality', 'CodeOfConduct', 'PDPA'];
+                                const declarationError = document.getElementById('declarationError');
+                                
+                                declarationCheckboxes.forEach(id => {
+                                    const checkbox = document.getElementById(id);
+                                    checkbox.addEventListener('change', function() {
+                                        const allChecked = declarationCheckboxes.every(checkId => 
+                                            document.getElementById(checkId).checked
+                                        );
+                                        
+                                        if (allChecked) {
+                                            declarationError.style.display = 'none';
+                                        }
+                                    });
+                                });
+                            } else if (role === 'Participant') {
+                                // Phone number is readonly and prefilled for participants too, so no validation needed
+
+                                // Add validation for emergency contact name (required)
+                                const emergencyContactNameInput = document.getElementById('EmergencyContactName');
+                                const emergencyContactNameError = document.getElementById('emergencyContactNameError');
+
+                                emergencyContactNameInput.addEventListener('blur', function() {
+                                    if (!this.value.trim()) {
+                                        emergencyContactNameError.style.display = 'block';
+                                        this.classList.add('is-invalid');
+                                    } else {
+                                        emergencyContactNameError.style.display = 'none';
+                                        this.classList.remove('is-invalid');
+                                    }
+                                });
+
+                                // Add validation for emergency contact number (required)
+                                const emergencyContactInput = document.getElementById('EmergencyContactNumber');
+                                const emergencyContactError = document.getElementById('emergencyContactError');
+
+                                emergencyContactInput.addEventListener('blur', function() {
+                                    const phoneRegex = /^\d{8}$/;
+                                    if (!this.value.trim()) {
+                                        emergencyContactError.textContent = 'Emergency contact number is required';
+                                        emergencyContactError.style.display = 'block';
+                                        this.classList.add('is-invalid');
+                                    } else if (!phoneRegex.test(this.value)) {
+                                        emergencyContactError.textContent = 'Please enter exactly 8 digits only';
+                                        emergencyContactError.style.display = 'block';
+                                        this.classList.add('is-invalid');
+                                    } else {
+                                        emergencyContactError.style.display = 'none';
+                                        this.classList.remove('is-invalid');
+                                    }
+                                });
+                            }
+                        },
+                        preConfirm: () => {
+                            const fullName = document.getElementById('FullName').value.trim();
+                            const email = document.getElementById('Email').value.trim();
+
+                            // Validate full name
+                            if (!fullName) {
+                                Swal.showValidationMessage('Please enter your full name');
+                                return false;
+                            }
+
+                            // Email is pre-filled and readonly, so no validation needed
+
+                            // Additional validation for volunteers
+                            if (role === 'Volunteer') {
+                                const nricLast4 = document.getElementById('NricLast4').value.trim();
+                                const gender = document.getElementById('Gender').value;
+                                const dateOfBirth = document.getElementById('DateOfBirth').value;
+                                const mobileNumber = document.getElementById('MobileNumber').value.trim();
+                                const citizenshipType = document.getElementById('CitizenshipType').value;
+                                const securityScreening = document.getElementById('SecurityScreening').checked;
+                                const confidentiality = document.getElementById('Confidentiality').checked;
+                                const codeOfConduct = document.getElementById('CodeOfConduct').checked;
+                                const pdpa = document.getElementById('PDPA').checked;
+
+                                if (!nricLast4 || nricLast4.length !== 4) {
+                                    Swal.showValidationMessage('Please enter the last 4 characters of your NRIC');
+                                    return false;
+                                }
+
+                                if (!gender) {
+                                    Swal.showValidationMessage('Please select your gender');
+                                    return false;
+                                }
+
+                                if (!dateOfBirth) {
+                                    Swal.showValidationMessage('Please enter your date of birth');
+                                    return false;
+                                }
+
+                                const phoneRegex = /^\d{8}$/;
+                                if (!mobileNumber || !phoneRegex.test(mobileNumber)) {
+                                    Swal.showValidationMessage('Please enter a valid mobile number (8 digits only)');
+                                    return false;
+                                }
+
+                                if (!citizenshipType) {
+                                    Swal.showValidationMessage('Please select your citizenship type');
+                                    return false;
+                                }
+
+                                if (!securityScreening) {
+                                    Swal.showValidationMessage('Please agree to Security Screening consent');
+                                    return false;
+                                }
+
+                                if (!confidentiality) {
+                                    Swal.showValidationMessage('Please agree to Confidentiality requirements');
+                                    return false;
+                                }
+
+                                if (!codeOfConduct) {
+                                    Swal.showValidationMessage('Please agree to Volunteer Code of Conduct');
+                                    return false;
+                                }
+
+                                if (!pdpa) {
+                                    Swal.showValidationMessage('Please agree to Personal Data Protection Act (PDPA)');
+                                    return false;
+                                }
+
+                                // Note: Declaration values are not stored in database - they're just for user awareness
+                                return {
+                                    eventId: eventId,
+                                    eventName: eventTitle,
+                                    role: role,
+                                    fullName: fullName,
+                                    email: email,
+                                    phoneNumber: mobileNumber, // Use mobile number as phone number
+                                    nricLast4: nricLast4,
+                                    gender: gender,
+                                    dateOfBirth: dateOfBirth,
+                                    citizenshipType: citizenshipType,
+                                    dietaryRequirements: null,
+                                    emergencyContact: null,
+                                    emergencyContactName: null
+                                };
+                            } else {
+                                // Participant validation
+                                const phoneNumber = document.getElementById('PhoneNumber') ? document.getElementById('PhoneNumber').value.trim() : '';
+                                const emergencyContactNumber = document.getElementById('EmergencyContactNumber') ? document.getElementById('EmergencyContactNumber').value.trim() : '';
+                                const emergencyContactName = document.getElementById('EmergencyContactName') ? document.getElementById('EmergencyContactName').value.trim() : '';
+                                
+                                // Validate emergency contact name (required for participants)
+                                if (!emergencyContactName) {
+                                    Swal.showValidationMessage('Emergency contact name is required');
+                                    return false;
+                                }
+
+                                // Validate emergency contact number (required for participants)
+                                if (!emergencyContactNumber) {
+                                    Swal.showValidationMessage('Emergency contact number is required');
+                                    return false;
+                                }
+
+                                // Phone number is prefilled and readonly, so no validation needed
+                                // But we still validate emergency contact number format - exactly 8 digits (numbers only)
+                                const phoneRegex = /^\d{8}$/;
+                                if (!phoneRegex.test(emergencyContactNumber)) {
+                                    Swal.showValidationMessage('Please enter a valid emergency contact number (8 digits only)');
+                                    return false;
+                                }
+
+                                return {
+                                    eventId: eventId,
+                                    eventName: eventTitle,
+                                    role: role,
+                                    fullName: fullName,
+                                    email: email,
+                                    phoneNumber: phoneNumber,
+                                    nricLast4: null,
+                                    gender: null,
+                                    dateOfBirth: null,
+                                    citizenshipType: null,
+                                    dietaryRequirements: role === 'Participant' ? document.getElementById('DietaryRequirements').value : null,
+                                    emergencyContact: role === 'Participant' ? document.getElementById('EmergencyContactNumber').value : null,
+                                    emergencyContactName: role === 'Participant' ? document.getElementById('EmergencyContactName').value : null
+                                };
+                            }
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            submitRegistration(result.value);
+                        } else if (result.dismiss === Swal.DismissReason.cancel) {
+                            // Back button clicked - return to event details with cached data (no delay!)
+                            showEventDetails(eventId, eventTitle, eventDate, cachedEventDetails);
+                        }
+                    });
+                }
+
+                function submitRegistration(registrationData) {
+                    // Submit registration
+                    fetch('/Calendar/Register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken':
+                                document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        body: JSON.stringify(registrationData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (data.isWaitlisted) {
+                                // User is waitlisted
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Added to Waitlist',
+                                    html: `
+                                        <p>${data.message}</p>
+                                        <p><strong>Registration ID:</strong> ${data.registrationId}</p>
+                                        <p class="text-info">You will be notified if a spot becomes available.</p>
+                                        <p class="text-muted small">No payment is required while on the waitlist.</p>
+                                    `
+                                });
+                            } else if (data.requiresPayment) {
+                                // Confirmed participant - show payment
+                                showPaymentModal(data.registrationId, data.qrCode, data.paymentAmount, data.message);
+                            } else {
+                                // Volunteer or confirmed participant with no payment
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Registration Successful!',
+                                    html: `
+                                        <p>${data.message}</p>
+                                        <p><strong>Registration ID:</strong> ${data.registrationId}</p>
+                                        <p><strong>QR Code:</strong> ${data.qrCode}</p>
+                                    `
+                                });
+                            }
+                        } else {
+                            Swal.fire('Error', data.message, 'error');
+                        }
+                    })
+                    .catch(() => {
+                        Swal.fire('Error', 'Something went wrong', 'error');
+                    });
+                }
+
+                function showPaymentModal(registrationId, qrCode, amount, successMessage = '') {
+                    // Show mock QR code for payment
+                    Swal.fire({
+                        title: 'Payment Required',
+                        html: `
+                            <h5>Scan QR Code to Pay</h5>
+                            <div style="background: #f0f0f0; padding: 20px; margin: 20px 0; border-radius: 8px;">
+                                <div style="background: #000; color: #fff; padding: 30px; font-family: monospace; font-size: 14px; word-break: break-all;">
+                                    ${qrCode}
+                                </div>
+                            </div>
+                            <p><strong>Amount: $${amount.toFixed(2)}</strong></p>
+                            <p class="text-muted small">This is a mock QR code for prototype purposes</p>
+                        `,
+                        showCancelButton: false,
+                        confirmButtonText: "I've Completed Payment",
+                        allowOutsideClick: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            confirmPayment(registrationId, qrCode);
+                        }
+                    });
+                }
+
+                function confirmPayment(registrationId, qrCode) {
+                    // Confirm payment and update database
+                    fetch('/Calendar/ConfirmPayment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken':
+                                document.querySelector('input[name="__RequestVerificationToken"]').value
+                        },
+                        body: JSON.stringify({
+                            registrationId: registrationId,
+                            qrCode: qrCode
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Payment Confirmed!',
+                                html: `
+                                    <p>Your registration and payment have been confirmed.</p>
+                                    <p><strong>Registration ID:</strong> ${data.registration.id}</p>
+                                    <p><strong>QR Code:</strong> ${data.registration.qrCode}</p>
+                                `
+                            });
+                        } else {
+                            Swal.fire('Error', data.message, 'error');
+                        }
+                    })
+                    .catch(() => {
+                        Swal.fire('Error', 'Payment confirmation failed', 'error');
+                    });
+                }
+        });
+    </script>
+
+    @* Optional success popup *@
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success',
+                text: '@successMessage'
+            });
+        </script>
+    }
+}

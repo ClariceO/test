@@ -1,0 +1,135 @@
+@model H4G_Project.Models.Event
+
+@{
+    ViewData["Title"] = "Create Event";
+    Layout = "~/Views/Shared/_Staff.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Create New Event</h4>
+        </div>
+
+        <div class="card-body">
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+
+            <form asp-action="CreateEvent" method="post" enctype="multipart/form-data">
+
+                <div class="form-group">
+                    <label asp-for="Name"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Start"></label>
+                    <input asp-for="Start" type="datetime-local" class="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="End"></label>
+                    <input asp-for="End" type="datetime-local" class="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="Details"></label>
+                    <textarea asp-for="Details" class="form-control"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="RegistrationDueDate">Registration Due Date</label>
+                    <input asp-for="RegistrationDueDate" type="date" class="form-control" />
+                </div>
+
+                <div class="form-group">
+                    <label asp-for="MaxParticipants">Max Participants</label>
+                    <input asp-for="MaxParticipants" type="number" min="1" class="form-control" />
+                </div>
+
+                <!-- IMAGE UPLOAD UI -->
+                <div class="form-group mt-4">
+                    <label class="font-weight-bold">Event Photo</label>
+
+                    <div id="imageUploadBox" class="image-upload-box">
+                        <span id="uploadHint">Click to upload image</span>
+                        <img id="previewImage" />
+                        <input type="file"
+                               name="EventPhoto"
+                               id="EventPhoto"
+                               accept="image/*"
+                               hidden />
+                    </div>
+
+                    <small class="text-muted">Optional. JPG / PNG only.</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-4">
+                    Create Event
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        const box = document.getElementById("imageUploadBox");
+        const input = document.getElementById("EventPhoto");
+        const preview = document.getElementById("previewImage");
+        const hint = document.getElementById("uploadHint");
+
+        box.addEventListener("click", () => input.click());
+
+        input.addEventListener("change", () => {
+            const file = input.files[0];
+            if (!file) return;
+
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = "block";
+            hint.style.display = "none";
+        });
+    </script>
+}
+
+<style>
+    .image-upload-box {
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        height: 220px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: #f8f9fa;
+        overflow: hidden;
+    }
+
+        .image-upload-box:hover {
+            border-color: #007bff;
+            background: #eef4ff;
+        }
+
+    #previewImage {
+        max-height: 100%;
+        max-width: 100%;
+        display: none;
+        object-fit: contain;
+    }
+
+    #uploadHint {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+</style>

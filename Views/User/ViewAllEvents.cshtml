@@ -1,0 +1,201 @@
+﻿@model List<H4G_Project.Models.Event>
+@using Microsoft.AspNetCore.Html
+
+@{
+    ViewData["Title"] = "My Events";
+    Layout = "~/Views/Shared/_Member.cshtml";
+    var eventComments = ViewBag.EventComments as Dictionary<string, List<H4G_Project.Models.CommentVM>> ?? new Dictionary<string, List<H4G_Project.Models.CommentVM>>();
+}
+
+<style>
+    body {
+        background-color: #F5F9FC; /* light blue-grey page background */
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        @foreach (var ev in Model)
+        {
+            <div class="col-md-4 mb-4">
+                <div class="card shadow" data-toggle="modal" data-target="#eventModal-@ev.Id" style="cursor:pointer;">
+                    <div class="card-body">
+                        <h5 class="card-title">@ev.Name</h5>
+
+                        @* Display event photo if exists *@
+                        @if (!string.IsNullOrEmpty(ev.eventPhoto))
+                        {
+                            <div class="text-center mb-3">
+                                <img src="@ev.eventPhoto" class="img-fluid rounded" style="max-height:200px; object-fit:cover;" />
+                            </div>
+                        }
+
+                        <p class="card-text">
+                            <strong>Start:</strong> @ev.Start.ToDateTime().ToString("yyyy-MM-dd HH:mm") <br />
+                            <strong>End:</strong> @(ev.End?.ToDateTime().ToString("yyyy-MM-dd HH:mm") ?? "-") <br />
+                            <strong>Max Participants:</strong> @ev.MaxParticipants <br />
+                            <strong>Registration Due:</strong> @ev.RegistrationDueDate.ToDateTime().ToString("yyyy-MM-dd")
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="eventModal-@ev.Id" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">@ev.Name</h5>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+
+                        <div class="modal-body">
+                            <!-- Event Details -->
+                            <div class="event-details mb-4">
+                                @if (!string.IsNullOrEmpty(ev.eventPhoto))
+                                {
+                                    <div class="text-center mb-3">
+                                        <img src="@ev.eventPhoto" class="img-fluid rounded" style="max-height:200px;" />
+                                    </div>
+                                }
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p><strong>Name:</strong> @ev.Name</p>
+                                        <p><strong>Description:</strong> @(ev.Details ?? "No description")</p>
+                                        <p><strong>Max Participants:</strong> @ev.MaxParticipants</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><strong>Start:</strong> @ev.Start.ToDateTime().ToString("dddd, MMM dd yyyy HH:mm")</p>
+                                        <p><strong>End:</strong> @(ev.End?.ToDateTime().ToString("dddd, MMM dd yyyy HH:mm") ?? "Not specified")</p>
+                                        <p><strong>Registration Due:</strong> @ev.RegistrationDueDate.ToDateTime().ToString("dddd, MMM dd yyyy")</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr />
+
+                            <!-- Comments Section -->
+                            <div class="comments-section">
+                                <h6 class="text-primary mb-3">Comments & Discussion</h6>
+
+                                @{
+                                    var comments = eventComments.ContainsKey(ev.Id) ? eventComments[ev.Id] : new List<H4G_Project.Models.CommentVM>();
+
+                                    IHtmlContent RenderComment(H4G_Project.Models.CommentVM c, int depth)
+                                    {
+                                        var indent = Math.Min(depth * 25, 200);
+                                        var borderColor = new[] { "#007bff", "#28a745", "#ffc107", "#dc3545", "#6f42c1", "#fd7e14" }[depth % 6];
+                                        var bgColor = depth == 0 ? "#f8f9fa" : "#ffffff";
+
+                                        var html = $@"
+                                                        <div class='comment-thread' style='margin-left:{indent}px; border-left:3px solid {borderColor}; padding-left:10px; margin-bottom:8px; background:{bgColor};'>
+                                                        <div class='d-flex justify-content-between mb-1'>
+                                                        <strong>{c.Username} [{c.Role}]</strong>
+                                                        <a href='#' class='btn btn-sm btn-outline-primary' onclick=""toggleReply('{c.Id}'); return false;"">Reply</a>
+                                                        </div>
+                                                        <div>{c.Comment}</div>
+
+                                                        <form method='post' action='/User/AddComment' id='reply-form-{c.Id}' style='display:none;' class='reply-form mt-2'>
+                                                        <input type='hidden' name='eventId' value='{ev.Id}' />
+                                                        <input type='hidden' name='parentCommentId' value='{c.Id}' />
+                                                        <div class='input-group input-group-sm'>
+                                                        <input name='comment' class='form-control' placeholder='Reply to {c.Username}...' required />
+                                                        <div class='input-group-append'>
+                                                        <button class='btn btn-success' type='submit'>Post</button>
+                                                        <button class='btn btn-secondary' type='button' onclick=""toggleReply('{c.Id}'); return false;"">Cancel</button>
+                                                        </div>
+                                                        </div>
+                                                        </form>
+
+                                                        <div id='thread-{c.Id}' class='replies-container'>
+                                                        ";
+
+                                        var builder = new HtmlContentBuilder();
+                                        builder.AppendHtml(html);
+
+                                        foreach (var reply in c.Replies.OrderBy(r => r.Timestamp))
+                                        {
+                                            builder.AppendHtml(RenderComment(reply, depth + 1));
+                                        }
+
+                                        builder.AppendHtml("</div></div>");
+                                        return builder;
+                                    }
+                                }
+
+                                <div class="mb-3">
+                                    @if (comments.Any())
+                                    {
+                                        @foreach (var c in comments.OrderBy(c => c.Timestamp))
+                                        {
+                                            @RenderComment(c, 0)
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-4 text-muted">No comments yet. Start the discussion!</div>
+                                    }
+                                </div>
+
+                                <!-- Add Top-level Comment -->
+                                <form asp-action="AddComment" method="post">
+                                    <input type="hidden" name="eventId" value="@ev.Id" />
+                                    <div class="input-group mt-3">
+                                        <input type="text" name="comment" class="form-control" placeholder="Share your thoughts..." required />
+                                        <div class="input-group-append">
+                                            <button type="submit" class="btn btn-primary">Comment</button>
+                                        </div>
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function toggleReply(id) {
+        const f = document.getElementById("reply-form-" + id);
+        if(f) f.style.display = f.style.display === "none" ? "block" : "none";
+    }
+</script>
+
+<style>
+    .modal-xl {
+        max-width: 90%;
+    }
+
+    .event-details {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+    }
+
+    .comments-section {
+        max-height: 500px;
+        overflow-y: auto;
+        padding: 15px;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .comment-thread {
+        position: relative;
+        transition: all 0.2s ease;
+        margin-bottom: 5px;
+        padding: 5px;
+    }
+
+    .reply-form {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        margin-top: 8px;
+    }
+</style>

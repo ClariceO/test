@@ -1,0 +1,185 @@
+#detailsModal .modal-dialog {
+  max-width: 90%;
+  width: 90%;
+  height: 90%;
+}
+
+#detailsModal .modal-content {
+  height: 100%;
+}
+
+#detailsModal .modal-body {
+  height: calc(100% - 120px);
+  /* leave space for header/footer */
+  overflow-y: auto;
+}
+
+/* Increase text sizes */
+#detailsModal .modal-title {
+  font-size: 1.8rem;
+}
+
+#detailsModal .modal-body p,
+#detailsModal .modal-body h6,
+#detailsModal .modal-footer button {
+  font-size: 2.0rem;
+  padding: 5px;
+}
+
+/* PDF viewer */
+#detailsModal iframe {
+  height: 800px;
+  border: 2px solid #666;
+}
+
+/* Client Applications Modal - Make it bigger */
+#clientDetailsModal .modal-dialog {
+  max-width: 95%;
+  width: 95%;
+  height: 95vh;
+  margin: 1rem auto;
+}
+
+#clientDetailsModal .modal-content {
+  height: 100%;
+  border-radius: 8px;
+}
+
+#clientDetailsModal .modal-body {
+  height: calc(100% - 140px);
+  /* leave space for header/footer */
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+#clientDetailsModal .modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 2px solid #dee2e6;
+}
+
+#clientDetailsModal .modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 2px solid #dee2e6;
+}
+
+/* Increase text sizes for better readability */
+#clientDetailsModal .modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+#clientDetailsModal .modal-body p {
+  font-size: 1.1rem;
+  margin-bottom: 0.8rem;
+}
+
+#clientDetailsModal .modal-body h6 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+#clientDetailsModal .modal-footer button {
+  font-size: 1.1rem;
+  padding: 0.6rem 1.2rem;
+}
+
+/* PDF viewer - make it taller */
+#clientDetailsModal iframe {
+  height: 600px;
+  border: 2px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Document toggle buttons */
+#clientDetailsModal .document-toggle-btn {
+  font-size: 0.9rem;
+  padding: 0.4rem 0.8rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #clientDetailsModal .modal-dialog {
+    max-width: 98%;
+    width: 98%;
+    height: 98vh;
+    margin: 0.5rem auto;
+  }
+
+  #clientDetailsModal iframe {
+    height: 400px;
+  }
+}
+
+/* Volunteer Registration Modal - Make it bigger */
+#volunteerDetailsModal .modal-dialog {
+  max-width: 95%;
+  width: 95%;
+  height: 95vh;
+  margin: 1rem auto;
+}
+
+#volunteerDetailsModal .modal-content {
+  height: 100%;
+  border-radius: 8px;
+}
+
+#volunteerDetailsModal .modal-body {
+  height: calc(100% - 140px);
+  /* leave space for header/footer */
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+#volunteerDetailsModal .modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 2px solid #dee2e6;
+}
+
+#volunteerDetailsModal .modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 2px solid #dee2e6;
+}
+
+/* Increase text sizes for better readability */
+#volunteerDetailsModal .modal-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+#volunteerDetailsModal .modal-body p {
+  font-size: 1.1rem;
+  margin-bottom: 0.8rem;
+}
+
+#volunteerDetailsModal .modal-body h6 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+#volunteerDetailsModal .modal-footer button {
+  font-size: 1.1rem;
+  padding: 0.6rem 1.2rem;
+}
+
+/* Clear Filters Button Styling */
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+.btn-outline-secondary:focus {
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+}
+
+/* Filter section spacing */
+.mt-3 .row {
+  align-items: end;
+}
+
+.mt-3 .row .col-md-3 label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}

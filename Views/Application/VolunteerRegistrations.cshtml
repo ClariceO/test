@@ -1,0 +1,425 @@
+@model List<H4G_Project.Models.EventRegistration>
+
+@{
+    ViewData["Title"] = "Volunteer Registration Management";
+    Layout = "~/Views/Shared/_Staff.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/applicationmodal.css" />
+
+@Html.AntiForgeryToken()
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-hands-helping"></i> Volunteer Registrations</h2>
+        <div>
+            <a href="@Url.Action("Index", "Application")" class="btn btn-info mr-2">
+                <i class="fas fa-user-plus"></i> View Client Applications
+            </a>
+            <a href="@Url.Action("VolunteerApplications", "Application")" class="btn btn-success">
+                <i class="fas fa-user-check"></i> View Volunteer Applications
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="searchInput">Search:</label>
+                <input type="text" id="searchInput" onkeyup="searchVolunteerTable()" class="form-control" placeholder="Search by name, email, or event...">
+            </div>
+            <div class="col-md-3">
+                <label for="eventFilter">Filter by Event:</label>
+                <select id="eventFilter" onchange="filterVolunteerTable()" class="form-control">
+                    <option value="">-- All Events --</option>
+                    @{
+                        var uniqueEvents = Model?.Select(v => v.EventName).Distinct().ToList() ?? new List<string>();
+                    }
+                    @foreach (var eventName in uniqueEvents)
+                    {
+                        <option value="@eventName">@eventName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="volunteerStatusFilter">Filter by Status:</label>
+                <select id="volunteerStatusFilter" onchange="filterVolunteerTable()" class="form-control">
+                    <option value="">-- All Statuses --</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="declined">Declined</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>&nbsp;</label> <!-- Empty label for alignment -->
+                <button type="button" class="btn btn-outline-secondary btn-block" onclick="clearAllVolunteerFilters()">
+                    <i class="fas fa-times-circle"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <table class="table table-bordered table-striped" id="volunteerRegistrationsTable">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Volunteer Name</th>
+                    <th>Event Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th>Registration Date</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null)
+                {
+                    @foreach (var v in Model)
+                    {
+                        <tr>
+                            <td>@v.FullName</td>
+                            <td>@v.EventName</td>
+                            <td>@v.Email</td>
+                            <td>@v.PhoneNumber</td>
+                            <td>
+                                @{
+                                    string vStatusClass = v.Status switch
+                                    {
+                                        "Approved" => "badge badge-success",
+                                        "Declined" => "badge badge-danger",
+                                        _ => "badge badge-warning"
+                                    };
+                                }
+                                <span class="@vStatusClass">@(v.Status ?? "Pending")</span>
+                            </td>
+                            <td>@v.RegistrationDate.ToDateTime().ToString("MMM dd, yyyy")</td>
+                            <td>
+                                @{
+                                    var allEvents = ViewBag.AllEvents as List<H4G_Project.Models.Event>;
+                                    var eventInfo = allEvents?.FirstOrDefault(e => e.Name == v.EventName);
+                                    string eventDetails = eventInfo?.Details ?? "No details available";
+                                    string eventStart = eventInfo?.Start.ToDateTime().ToString("MMM dd, yyyy HH:mm") ?? "N/A";
+                                    string eventEnd = eventInfo?.End?.ToDateTime().ToString("MMM dd, yyyy HH:mm") ?? "N/A";
+                                    string maxParticipants = eventInfo?.MaxParticipants.ToString() ?? "N/A";
+                                    string regDueDate = eventInfo?.RegistrationDueDate.ToDateTime().ToString("MMM dd, yyyy") ?? "N/A";
+                                }
+                                <a href="javascript:void(0);" class="text-primary"
+                                    onclick="showVolunteerDetails('@v.Id', '@v.FullName', '@v.EventName', '@v.Email', '@v.PhoneNumber', '@v.NricLast4', '@v.Gender', '@v.DateOfBirth', '@v.CitizenshipType', '@(v.Status ?? "Pending")', '@Html.Raw(eventDetails.Replace("'", "\\'"))', '@eventStart', '@eventEnd', '@maxParticipants', '@regDueDate')">
+                                    View Details
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Volunteer Registration Details Modal -->
+<div class="modal fade" id="volunteerDetailsModal" tabindex="-1" role="dialog" aria-labelledby="volunteerDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="volunteerDetailsModalLabel">Volunteer Registration Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Left Side: Volunteer Information -->
+                    <div class="col-md-6">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-user"></i> Volunteer Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong class="text-primary">Full Name:</strong>
+                                    <div class="text-dark" id="volunteerDetailName"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-primary">Email:</strong>
+                                    <div class="text-dark" id="volunteerDetailEmail"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-primary">Phone Number:</strong>
+                                    <div class="text-dark" id="volunteerDetailPhone"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-primary">NRIC Last 4 Digits:</strong>
+                                    <div class="text-dark" id="volunteerDetailNric"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-primary">Gender:</strong>
+                                    <div class="text-dark" id="volunteerDetailGender"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-primary">Date of Birth:</strong>
+                                    <div class="text-dark" id="volunteerDetailDob"></div>
+                                </div>
+                                <div class="mb-0">
+                                    <strong class="text-primary">Citizenship Type:</strong>
+                                    <div class="text-dark" id="volunteerDetailCitizenship"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Side: Event Information -->
+                    <div class="col-md-6">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-calendar-alt"></i> Event Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <strong class="text-success">Event Name:</strong>
+                                    <div class="text-dark" id="volunteerDetailEvent"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-success">Description:</strong>
+                                    <div class="text-dark" id="volunteerDetailEventDescription" style="max-height: 80px; overflow-y: auto;"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-success">Event Start:</strong>
+                                    <div class="text-dark" id="volunteerDetailEventStart"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-success">Event End:</strong>
+                                    <div class="text-dark" id="volunteerDetailEventEnd"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-success">Max Participants:</strong>
+                                    <div class="text-dark" id="volunteerDetailMaxParticipants"></div>
+                                </div>
+                                <div class="mb-0">
+                                    <strong class="text-success">Registration Due:</strong>
+                                    <div class="text-dark" id="volunteerDetailRegDueDate"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="volunteerModalFooter">
+                <button type="button" class="btn btn-success" id="volunteerApproveBtn" onclick="approveVolunteerRegistration()" style="display:none;">Approve</button>
+                <button type="button" class="btn btn-danger" id="volunteerRejectBtn" onclick="rejectVolunteerRegistration()" style="display:none;">Decline</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Volunteer Registration Variables
+        let currentVolunteerRegistrationId = '';
+        let currentVolunteerName = '';
+        let currentVolunteerEmail = '';
+
+        // Volunteer Registration Functions
+        function showVolunteerDetails(registrationId, fullName, eventName, email, phone, nricLast4, gender, dateOfBirth, citizenshipType, status, eventDescription, eventStart, eventEnd, maxParticipants, regDueDate) {
+            currentVolunteerRegistrationId = registrationId;
+            currentVolunteerName = fullName;
+            currentVolunteerEmail = email;
+
+            // Volunteer Information
+            document.getElementById("volunteerDetailName").innerText = fullName;
+            document.getElementById("volunteerDetailEmail").innerText = email;
+            document.getElementById("volunteerDetailPhone").innerText = phone;
+            document.getElementById("volunteerDetailNric").innerText = nricLast4;
+            document.getElementById("volunteerDetailGender").innerText = gender;
+            document.getElementById("volunteerDetailDob").innerText = dateOfBirth;
+            document.getElementById("volunteerDetailCitizenship").innerText = citizenshipType;
+            
+            // Event Information
+            document.getElementById("volunteerDetailEvent").innerText = eventName;
+            document.getElementById("volunteerDetailEventDescription").innerText = eventDescription || "No description available";
+            document.getElementById("volunteerDetailEventStart").innerText = eventStart;
+            document.getElementById("volunteerDetailEventEnd").innerText = eventEnd;
+            document.getElementById("volunteerDetailMaxParticipants").innerText = maxParticipants;
+            document.getElementById("volunteerDetailRegDueDate").innerText = regDueDate;
+
+            const approveBtn = document.getElementById("volunteerApproveBtn");
+            const rejectBtn = document.getElementById("volunteerRejectBtn");
+
+            if (status === "Pending") {
+                approveBtn.style.display = "inline-block";
+                rejectBtn.style.display = "inline-block";
+            } else {
+                approveBtn.style.display = "none";
+                rejectBtn.style.display = "none";
+            }
+
+            $('#volunteerDetailsModal').modal('show');
+        }
+
+        function approveVolunteerRegistration() {
+            if (!currentVolunteerRegistrationId) {
+                alert("Error: Registration ID not found");
+                return;
+            }
+
+            $('#volunteerDetailsModal').modal('hide');
+            
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Application/ApproveVolunteerRegistration';
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = token.value;
+                form.appendChild(tokenInput);
+            }
+            
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'registrationId';
+            idInput.value = currentVolunteerRegistrationId;
+            form.appendChild(idInput);
+            
+            const nameInput = document.createElement('input');
+            nameInput.type = 'hidden';
+            nameInput.name = 'volunteerName';
+            nameInput.value = currentVolunteerName;
+            form.appendChild(nameInput);
+            
+            const emailInput = document.createElement('input');
+            emailInput.type = 'hidden';
+            emailInput.name = 'volunteerEmail';
+            emailInput.value = currentVolunteerEmail;
+            form.appendChild(emailInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function rejectVolunteerRegistration() {
+            if (!currentVolunteerRegistrationId) {
+                alert("Error: Registration ID not found");
+                return;
+            }
+
+            $('#volunteerDetailsModal').modal('hide');
+            
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Application/RejectVolunteerRegistration';
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = token.value;
+                form.appendChild(tokenInput);
+            }
+            
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'registrationId';
+            idInput.value = currentVolunteerRegistrationId;
+            form.appendChild(idInput);
+            
+            const nameInput = document.createElement('input');
+            nameInput.type = 'hidden';
+            nameInput.name = 'volunteerName';
+            nameInput.value = currentVolunteerName;
+            form.appendChild(nameInput);
+            
+            const emailInput = document.createElement('input');
+            emailInput.type = 'hidden';
+            emailInput.name = 'volunteerEmail';
+            emailInput.value = currentVolunteerEmail;
+            form.appendChild(emailInput);
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Filter Functions
+        function filterVolunteerTable() {
+            const searchInput = document.getElementById("searchInput").value.toLowerCase();
+            const eventFilter = document.getElementById("eventFilter").value.toLowerCase();
+            const statusFilter = document.getElementById("volunteerStatusFilter").value.toLowerCase();
+            const table = document.getElementById("volunteerRegistrationsTable");
+            const rows = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < rows.length; i++) {
+                const nameCell = rows[i].getElementsByTagName("td")[0];
+                const eventCell = rows[i].getElementsByTagName("td")[1];
+                const emailCell = rows[i].getElementsByTagName("td")[2];
+                const phoneCell = rows[i].getElementsByTagName("td")[3];
+                const statusCell = rows[i].getElementsByTagName("td")[4];
+                
+                if (nameCell && eventCell && emailCell && phoneCell && statusCell) {
+                    const nameText = nameCell.textContent || nameCell.innerText;
+                    const eventText = eventCell.textContent || eventCell.innerText;
+                    const emailText = emailCell.textContent || emailCell.innerText;
+                    const phoneText = phoneCell.textContent || phoneCell.innerText;
+                    const statusText = statusCell.textContent || statusCell.innerText;
+                    
+                    // Search across multiple fields
+                    const searchMatch = searchInput === "" || 
+                        nameText.toLowerCase().includes(searchInput) ||
+                        eventText.toLowerCase().includes(searchInput) ||
+                        emailText.toLowerCase().includes(searchInput) ||
+                        phoneText.toLowerCase().includes(searchInput);
+                    
+                    const eventMatch = eventFilter === "" || eventText.toLowerCase().includes(eventFilter);
+                    const statusMatch = statusFilter === "" || statusText.toLowerCase().includes(statusFilter);
+                    
+                    if (searchMatch && eventMatch && statusMatch) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function searchVolunteerTable() {
+            filterVolunteerTable(); // Reuse the existing filter logic
+        }
+
+        function clearAllVolunteerFilters() {
+            // Clear search input
+            document.getElementById("searchInput").value = "";
+            
+            // Reset event filter
+            document.getElementById("eventFilter").selectedIndex = 0;
+            
+            // Reset status filter
+            document.getElementById("volunteerStatusFilter").selectedIndex = 0;
+            
+            // Reapply filters (which will show all rows since filters are cleared)
+            filterVolunteerTable();
+        }
+    </script>
+}

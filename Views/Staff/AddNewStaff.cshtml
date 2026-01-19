@@ -1,0 +1,110 @@
+@{
+    ViewData["Title"] = "Add New Staff";
+    Layout = "~/Views/Shared/_Staff.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Add New Staff Member</h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (TempData["WarningMessage"] != null)
+                    {
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                            @TempData["WarningMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (ViewData.ModelState.Count > 0 && !ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <p class="mb-0">@error.ErrorMessage</p>
+                            }
+                        </div>
+                    }
+
+                    <form method="post" action="/Staff/NewStaff">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label for="Username" class="form-label">Username <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="Username" name="Username" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Email" class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="Email" name="Email" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="Password" class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="Password" name="Password" required>
+                            <div class="form-text">Password must be at least 6 characters long.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="LastDayOfService" class="form-label">Last Day of Service</label>
+                            <input type="date" class="form-control" id="LastDayOfService" name="LastDayOfService"
+                                min="@DateTime.Today.ToString("yyyy-MM-dd")">
+                            <div class="form-text">Leave empty for no expiration date. Must be today or a future date.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Staff Account</button>
+                            <a href="/Staff" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Additional client-side validation for LastDayOfService
+        document.getElementById('LastDayOfService').addEventListener('change', function () {
+            const selectedDate = new Date(this.value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+
+            if (selectedDate < today) {
+                alert('Last Day of Service must be today or a future date.');
+                this.value = ''; // Clear the invalid date
+            }
+        });
+
+        // Set minimum date to today when page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('LastDayOfService').setAttribute('min', today);
+
+            // Clear form if there's a success message (indicating successful submission)
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <text>
+                // Clear the form fields after successful submission
+                document.getElementById('Username').value = '';
+                document.getElementById('Email').value = '';
+                document.getElementById('Password').value = '';
+                document.getElementById('LastDayOfService').value = '';
+                </text>
+            }
+        });
+    </script>
+}

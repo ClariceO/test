@@ -1,0 +1,454 @@
+@model List<Application>
+
+@{
+    ViewData["Title"] = "Client Application Management";
+    Layout = "~/Views/Shared/_Staff.cshtml";
+}
+
+<link rel="stylesheet" href="~/css/applicationmodal.css" />
+
+@Html.AntiForgeryToken()
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user-plus"></i> Client Applications</h2>
+        <div>
+            <a href="@Url.Action("VolunteerRegistrations", "Application")" class="btn btn-info mr-2">
+                <i class="fas fa-hands-helping"></i> View Volunteer Registrations
+            </a>
+            <a href="@Url.Action("VolunteerApplications", "Application")" class="btn btn-success">
+                <i class="fas fa-user-check"></i> View Volunteer Applications
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="searchInput">Search:</label>
+                <input type="text" id="searchInput" onkeyup="searchClientTable()" class="form-control"
+                       placeholder="Search by name, email, or notes...">
+            </div>
+            <div class="col-md-3">
+                <label for="disabilityFilter">Filter by Disability Type:</label>
+                <select id="disabilityFilter" onchange="filterClientTable()" class="form-control">
+                    <option value="">-- All --</option>
+                    <option value="intellectual">Intellectual Disability</option>
+                    <option value="physical">Physical Disability</option>
+                    <option value="developmental">Developmental Disability</option>
+                    <option value="others">Others</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="clientStatusFilter">Filter by Status:</label>
+                <select id="clientStatusFilter" onchange="filterClientTable()" class="form-control">
+                    <option value="">-- All Statuses --</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="declined">Declined</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label>&nbsp;</label> <!-- Empty label for alignment -->
+                <button type="button" class="btn btn-outline-secondary btn-block" onclick="clearAllFilters()">
+                    <i class="fas fa-times-circle"></i> Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <table class="table table-bordered table-striped" id="clientApplicationsTable">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Family Member Name</th>
+                    <th>Disability Type</th>
+                    <th>Caregiver Name</th>
+                    <th>Status</th>
+                    <th>Notes</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td>@r.FamilyMemberName</td>
+                        <td>@r.DisabilityType</td>
+                        <td>@r.CaregiverName</td>
+                        <td>
+                            @{
+                                string statusClass = r.Status switch
+                                {
+                                    "Approved" => "badge badge-success",
+                                    "Declined" => "badge badge-danger",
+                                    _ => "badge badge-warning"
+                                };
+                            }
+                            <span class="@statusClass">@(r.Status ?? "Pending")</span>
+                        </td>
+                        <td>@r.Notes</td>
+                        <td>
+                            <a href="javascript:void(0);" class="text-primary"
+                                onclick="showClientDetails('@r.Id', '@r.FamilyMemberName', '@r.DisabilityType', '@r.CaregiverName', '@r.Notes', '@r.Email', '@r.ContactNumber', '@r.Occupation', '@(r.Status ?? "Pending")', '@r.MedicalReportUrl', '@r.IdDocumentUrl')">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Client Application Details Modal -->
+<div class="modal fade" id="clientDetailsModal" tabindex="-1" role="dialog" aria-labelledby="clientDetailsModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clientDetailsModalLabel">Client Application Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Family Member Name:</strong> <span id="clientDetailFamilyMember"></span></p>
+                        <p><strong>Disability Type:</strong> <span id="clientDetailDisability"></span></p>
+                        <p><strong>Caregiver Name:</strong> <span id="clientDetailCaregiver"></span></p>
+                        <p><strong>Notes:</strong> <span id="clientDetailNotes"></span></p>
+                        <p><strong>Email:</strong> <span id="clientDetailEmail"></span></p>
+                        <p><strong>Contact Number:</strong> <span id="clientDetailContact"></span></p>
+                        <p><strong>Occupation:</strong> <span id="clientDetailOccupation"></span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 id="documentTitle">Medical Report</h6>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary active document-toggle-btn"
+                                        id="medicalReportBtn" onclick="showMedicalReport()">
+                                    <i class="fas fa-file-medical"></i> Medical Report
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary document-toggle-btn"
+                                        id="idDocumentBtn" onclick="showIdDocument()">
+                                    <i class="fas fa-id-card"></i> ID Document
+                                </button>
+                            </div>
+                        </div>
+                        <iframe id="clientDetailDocument" src="" width="100%" height="600px"
+                                style="border:1px solid #ccc;"></iframe>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="clientModalFooter">
+                <button type="button" class="btn btn-success" id="clientApproveBtn" onclick="approveClientApplication()"
+                        style="display:none;">
+                    Approve
+                </button>
+                <button type="button" class="btn btn-danger" id="clientRejectBtn" onclick="rejectClientApplication()"
+                        style="display:none;">
+                    Decline
+                </button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <style>
+        .document-toggle-btn {
+            transition: all 0.2s ease-in-out;
+        }
+
+            .document-toggle-btn:hover {
+                transform: translateY(-1px);
+            }
+
+            .document-toggle-btn.active {
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+    </style>
+    <script>
+        // Client Application Variables
+        let currentApplicationId = '';
+        let currentApplicantName = '';
+        let currentApplicantEmail = '';
+        let currentFamilyMemberName = '';
+        let currentDateOfBirth = '';
+        let currentMedicalReportUrl = '';
+        let currentIdDocumentUrl = '';
+
+        // Client Application Functions
+        function showClientDetails(applicationId, familyMember, disability, caregiver, notes, email, contact, occupation, status, medicalReportUrl, idDocumentUrl, dateOfBirth) {
+            currentApplicationId = applicationId;
+            currentApplicantName = caregiver; // Caregiver is the applicant
+            currentFamilyMemberName = familyMember; // Family member is the client
+            currentApplicantEmail = email;
+            currentDateOfBirth = dateOfBirth || ''; // Store date of birth
+            currentMedicalReportUrl = medicalReportUrl || '/file/report123.pdf'; // fallback
+            currentIdDocumentUrl = idDocumentUrl || '/file/report123.pdf'; // fallback
+
+            document.getElementById("clientDetailFamilyMember").innerText = familyMember;
+            document.getElementById("clientDetailDisability").innerText = disability;
+            document.getElementById("clientDetailCaregiver").innerText = caregiver;
+            document.getElementById("clientDetailNotes").innerText = notes;
+            document.getElementById("clientDetailEmail").innerText = email;
+            document.getElementById("clientDetailContact").innerText = contact;
+            document.getElementById("clientDetailOccupation").innerText = occupation;
+
+            // Show medical report by default
+            showMedicalReport();
+
+            const approveBtn = document.getElementById("clientApproveBtn");
+            const rejectBtn = document.getElementById("clientRejectBtn");
+
+            if (status === "Pending") {
+                approveBtn.style.display = "inline-block";
+                rejectBtn.style.display = "inline-block";
+            } else {
+                approveBtn.style.display = "none";
+                rejectBtn.style.display = "none";
+            }
+
+            $('#clientDetailsModal').modal('show');
+        }
+
+        function showMedicalReport() {
+            const medicalReportUrl = currentMedicalReportUrl;
+            if (medicalReportUrl && medicalReportUrl !== '') {
+                document.getElementById("clientDetailDocument").src = medicalReportUrl;
+            } else {
+                document.getElementById("clientDetailDocument").src = "data:text/html;charset=utf-8,<html><body style='font-family:Arial;text-align:center;padding:50px;color:#666;'><h3>Medical Report Not Available</h3><p>No medical report has been uploaded for this application.</p></body></html>";
+            }
+            document.getElementById("documentTitle").innerText = "Medical Report";
+
+            // Update button states
+            document.getElementById("medicalReportBtn").classList.add("active");
+            document.getElementById("medicalReportBtn").classList.remove("btn-outline-primary");
+            document.getElementById("medicalReportBtn").classList.add("btn-primary");
+
+            document.getElementById("idDocumentBtn").classList.remove("active");
+            document.getElementById("idDocumentBtn").classList.remove("btn-primary");
+            document.getElementById("idDocumentBtn").classList.add("btn-outline-secondary");
+        }
+
+        function showIdDocument() {
+            const idDocumentUrl = currentIdDocumentUrl;
+            if (idDocumentUrl && idDocumentUrl !== '') {
+                document.getElementById("clientDetailDocument").src = idDocumentUrl;
+            } else {
+                document.getElementById("clientDetailDocument").src = "data:text/html;charset=utf-8,<html><body style='font-family:Arial;text-align:center;padding:50px;color:#666;'><h3>ID Document Not Available</h3><p>No ID document has been uploaded for this application.</p></body></html>";
+            }
+            document.getElementById("documentTitle").innerText = "ID Document";
+
+            // Update button states
+            document.getElementById("idDocumentBtn").classList.add("active");
+            document.getElementById("idDocumentBtn").classList.remove("btn-outline-secondary");
+            document.getElementById("idDocumentBtn").classList.add("btn-primary");
+
+            document.getElementById("medicalReportBtn").classList.remove("active");
+            document.getElementById("medicalReportBtn").classList.remove("btn-primary");
+            document.getElementById("medicalReportBtn").classList.add("btn-outline-primary");
+        }
+
+        function approveClientApplication() {
+            if (!currentApplicationId) {
+                alert("Error: Application ID not found");
+                return;
+            }
+
+            // Debug: Log the current values
+            console.log("=== CLIENT APPROVAL DEBUG ===");
+            console.log("Application ID:", currentApplicationId);
+            console.log("Applicant Name:", currentApplicantName);
+            console.log("Applicant Email:", currentApplicantEmail);
+            console.log("Family Member Name:", currentFamilyMemberName);
+            console.log("Date of Birth:", currentDateOfBirth);
+            console.log("==============================");
+
+            $('#clientDetailsModal').modal('hide');
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Application/ApproveApplication';
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = token.value;
+                form.appendChild(tokenInput);
+            }
+
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'applicationId';
+            idInput.value = currentApplicationId;
+            form.appendChild(idInput);
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'hidden';
+            nameInput.name = 'applicantName';
+            nameInput.value = currentApplicantName;
+            form.appendChild(nameInput);
+
+            const emailInput = document.createElement('input');
+            emailInput.type = 'hidden';
+            emailInput.name = 'applicantEmail';
+            emailInput.value = currentApplicantEmail;
+            form.appendChild(emailInput);
+
+            const familyMemberInput = document.createElement('input');
+            familyMemberInput.type = 'hidden';
+            familyMemberInput.name = 'familyMemberName';
+            familyMemberInput.value = currentFamilyMemberName;
+            form.appendChild(familyMemberInput);
+
+            const dateOfBirthInput = document.createElement('input');
+            dateOfBirthInput.type = 'hidden';
+            dateOfBirthInput.name = 'dateOfBirth';
+            dateOfBirthInput.value = currentDateOfBirth;
+            form.appendChild(dateOfBirthInput);
+
+            // Debug: Log form data before submission
+            console.log("Form data being submitted:");
+            const formData = new FormData(form);
+            for (let [key, value] of formData.entries()) {
+                console.log(key + ": " + value);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function rejectClientApplication() {
+            if (!currentApplicationId) {
+                alert("Error: Application ID not found");
+                return;
+            }
+
+            $('#clientDetailsModal').modal('hide');
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/Application/RejectApplication';
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (token) {
+                const tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = '__RequestVerificationToken';
+                tokenInput.value = token.value;
+                form.appendChild(tokenInput);
+            }
+
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'applicationId';
+            idInput.value = currentApplicationId;
+            form.appendChild(idInput);
+
+            const nameInput = document.createElement('input');
+            nameInput.type = 'hidden';
+            nameInput.name = 'applicantName';
+            nameInput.value = currentApplicantName;
+            form.appendChild(nameInput);
+
+            const emailInput = document.createElement('input');
+            emailInput.type = 'hidden';
+            emailInput.name = 'applicantEmail';
+            emailInput.value = currentApplicantEmail;
+            form.appendChild(emailInput);
+
+            const familyMemberInput = document.createElement('input');
+            familyMemberInput.type = 'hidden';
+            familyMemberInput.name = 'familyMemberName';
+            familyMemberInput.value = currentFamilyMemberName;
+            form.appendChild(familyMemberInput);
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Filter Functions
+        function filterClientTable() {
+            const searchInput = document.getElementById("searchInput").value.toLowerCase();
+            const disabilityFilter = document.getElementById("disabilityFilter").value.toLowerCase();
+            const statusFilter = document.getElementById("clientStatusFilter").value.toLowerCase();
+            const table = document.getElementById("clientApplicationsTable");
+            const rows = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < rows.length; i++) {
+                const familyMemberCell = rows[i].getElementsByTagName("td")[0];
+                const disabilityCell = rows[i].getElementsByTagName("td")[1];
+                const caregiverCell = rows[i].getElementsByTagName("td")[2];
+                const statusCell = rows[i].getElementsByTagName("td")[3];
+                const notesCell = rows[i].getElementsByTagName("td")[4];
+
+                if (familyMemberCell && disabilityCell && caregiverCell && statusCell && notesCell) {
+                    const familyMemberText = familyMemberCell.textContent || familyMemberCell.innerText;
+                    const disabilityText = disabilityCell.textContent || disabilityCell.innerText;
+                    const caregiverText = caregiverCell.textContent || caregiverCell.innerText;
+                    const statusText = statusCell.textContent || statusCell.innerText;
+                    const notesText = notesCell.textContent || notesCell.innerText;
+
+                    // Search across multiple fields
+                    const searchMatch = searchInput === "" ||
+                        familyMemberText.toLowerCase().includes(searchInput) ||
+                        caregiverText.toLowerCase().includes(searchInput) ||
+                        notesText.toLowerCase().includes(searchInput);
+
+                    const disabilityMatch = disabilityFilter === "" || disabilityText.toLowerCase().includes(disabilityFilter);
+                    const statusMatch = statusFilter === "" || statusText.toLowerCase().includes(statusFilter);
+
+                    if (searchMatch && disabilityMatch && statusMatch) {
+                        rows[i].style.display = "";
+                    } else {
+                        rows[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function searchClientTable() {
+            filterClientTable(); // Reuse the existing filter logic
+        }
+        function clearAllFilters() {
+            // Clear search input
+            document.getElementById("searchInput").value = "";
+
+            // Reset disability filter
+            document.getElementById("disabilityFilter").selectedIndex = 0;
+
+            // Reset status filter
+            document.getElementById("clientStatusFilter").selectedIndex = 0;
+
+                // Reapply filters (which will show all rows since filters are cleared)
+                filterClientTable();
+            }
+        </script>
+}

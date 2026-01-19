@@ -1,0 +1,481 @@
+@model H4G_Project.Models.User
+
+@{
+    ViewData["Title"] = "Add User";
+    Layout = "~/Views/Shared/_Staff.cshtml";
+}
+
+<link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet">
+
+<style>
+
+    html, body {
+        height: 100%;
+        margin: 0;
+    }
+
+    body {
+        font-family: "Poppins", sans-serif;
+        background-color: #F5F9FC; /* same as staff layout */
+    }
+
+    a {
+        color: #92badd;
+        display: inline-block;
+        text-decoration: none;
+        font-weight: 400;
+    }
+
+    h2 {
+        text-align: center;
+        font-size: 16px;
+        font-weight: 600;
+        text-transform: uppercase;
+        display: inline-block;
+        margin: 40px 8px 10px 8px;
+        color: #cccccc;
+    }
+
+    #formContent {
+        font-family: "Poppins", sans-serif;
+    }
+
+    /* STRUCTURE */
+
+    .wrapper {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    #formContent {
+        -webkit-border-radius: 10px 10px 10px 10px;
+        border-radius: 10px 10px 10px 10px;
+        background: #fff;
+        padding: 30px;
+        width: 90%;
+        max-width: 450px;
+        position: relative;
+        padding: 0px;
+        -webkit-box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.3);
+        box-shadow: 0 30px 60px 0 rgba(0, 0, 0, 0.3);
+        text-align: center;
+    }
+
+    #formFooter {
+        background-color: #f6f6f6;
+        border-top: 1px solid #dce8f1;
+        padding: 25px;
+        text-align: center;
+        -webkit-border-radius: 0 0 10px 10px;
+        border-radius: 0 0 10px 10px;
+    }
+
+    form{
+        padding: 20px;
+    }
+
+
+
+    /* TABS */
+
+    h2.inactive {
+        color: #cccccc;
+    }
+
+    h2.active {
+        color: #0d0d0d;
+        border-bottom: 2px solid #5fbae9;
+    }
+
+
+
+    /* FORM TYPOGRAPHY*/
+
+    input[type=button],
+    input[type=submit],
+    input[type=reset] {
+        background-color: #56baed;
+        border: none;
+        color: white;
+        padding: 15px 80px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        text-transform: uppercase;
+        font-size: 13px;
+        -webkit-box-shadow: 0 10px 30px 0 rgba(95, 186, 233, 0.4);
+        box-shadow: 0 10px 30px 0 rgba(95, 186, 233, 0.4);
+        -webkit-border-radius: 5px 5px 5px 5px;
+        border-radius: 5px 5px 5px 5px;
+        margin: 5px 20px 40px 20px;
+        -webkit-transition: all 0.3s ease-in-out;
+        -moz-transition: all 0.3s ease-in-out;
+        -ms-transition: all 0.3s ease-in-out;
+        -o-transition: all 0.3s ease-in-out;
+        transition: all 0.3s ease-in-out;
+    }
+
+    input[type=button]:hover,
+    input[type=submit]:hover,
+    input[type=reset]:hover {
+        background-color: #39ace7;
+    }
+
+    input[type=button]:active,
+    input[type=submit]:active,
+    input[type=reset]:active {
+        -moz-transform: scale(0.95);
+        -webkit-transform: scale(0.95);
+        -o-transform: scale(0.95);
+        -ms-transform: scale(0.95);
+        transform: scale(0.95);
+    }
+
+    input[type=text],
+    input[type=email],
+    input[type=password] {
+        background-color: #f6f6f6;
+        border: none;
+        color: #0d0d0d;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 5px;
+        width: 85%;
+        border: 2px solid #f6f6f6;
+        -webkit-transition: all 0.5s ease-in-out;
+        -moz-transition: all 0.5s ease-in-out;
+        -ms-transition: all 0.5s ease-in-out;
+        -o-transition: all 0.5s ease-in-out;
+        transition: all 0.5s ease-in-out;
+        -webkit-border-radius: 5px 5px 5px 5px;
+        border-radius: 5px 5px 5px 5px;
+    }
+
+    input[type=text],
+    input[type=email],
+    input[type=password]:focus {
+        background-color: #fff;
+        border-bottom: 2px solid #5fbae9;
+    }
+
+    input[type=text],
+    input[type=email],
+    input[type=password]:placeholder {
+        color: #cccccc;
+    }
+
+
+
+    /* ANIMATIONS */
+
+    /* Simple CSS3 Fade-in-down Animation */
+    .fadeInDown {
+        -webkit-animation-name: fadeInDown;
+        animation-name: fadeInDown;
+        -webkit-animation-duration: 1s;
+        animation-duration: 1s;
+        -webkit-animation-fill-mode: both;
+        animation-fill-mode: both;
+    }
+
+    @@-webkit-keyframes fadeInDown {
+        0% {
+            opacity: 0;
+            -webkit-transform: translate3d(0, -100%, 0);
+            transform: translate3d(0, -100%, 0);
+        }
+
+        100% {
+            opacity: 1;
+            -webkit-transform: none;
+            transform: none;
+        }
+    }
+
+    @@keyframes fadeInDown {
+        0% {
+            opacity: 0;
+            -webkit-transform: translate3d(0, -100%, 0);
+            transform: translate3d(0, -100%, 0);
+        }
+
+        100% {
+            opacity: 1;
+            -webkit-transform: none;
+            transform: none;
+        }
+    }
+
+    /* Simple CSS3 Fade-in Animation */
+    @@-webkit-keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@-moz-keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    .fadeIn {
+        opacity: 0;
+        -webkit-animation: fadeIn ease-in 1;
+        -moz-animation: fadeIn ease-in 1;
+        animation: fadeIn ease-in 1;
+        -webkit-animation-fill-mode: forwards;
+        -moz-animation-fill-mode: forwards;
+        animation-fill-mode: forwards;
+        -webkit-animation-duration: 1s;
+        -moz-animation-duration: 1s;
+        animation-duration: 1s;
+    }
+
+    .fadeIn.first {
+        -webkit-animation-delay: 0.4s;
+        -moz-animation-delay: 0.4s;
+        animation-delay: 0.4s;
+    }
+
+    .fadeIn.second {
+        -webkit-animation-delay: 0.6s;
+        -moz-animation-delay: 0.6s;
+        animation-delay: 0.6s;
+    }
+
+    .fadeIn.third {
+        -webkit-animation-delay: 0.8s;
+        -moz-animation-delay: 0.8s;
+        animation-delay: 0.8s;
+    }
+
+    .fadeIn.fourth {
+        -webkit-animation-delay: 1s;
+        -moz-animation-delay: 1s;
+        animation-delay: 1s;
+    }
+
+    /* Simple CSS3 Fade-in Animation */
+    .underlineHover:after {
+        display: block;
+        left: 0;
+        bottom: -10px;
+        width: 0;
+        height: 2px;
+        background-color: #56baed;
+        content: "";
+        transition: width 0.2s;
+    }
+
+    .underlineHover:hover {
+        color: #0d0d0d;
+    }
+
+    .underlineHover:hover:after {
+        width: 100%;
+    }
+
+
+
+    /* OTHERS */
+
+    *:focus {
+        outline: none;
+    }
+
+    #icon {
+        width: 60%;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+</style>
+
+
+<div class="wrapper fadeInDown">
+    <div id="formContent">
+        <h2 class="User active">Add User</h2>
+
+        @using (Html.BeginForm("AddUser", "Staff", FormMethod.Post, new { onsubmit = "return validateForm();" }))
+        {
+            <input type="hidden" name="ApplicationId" value="@ViewBag.ApplicationId" />
+            <input type="hidden" id="isFromApplication" value="@(!string.IsNullOrEmpty(ViewBag.ApplicationId?.ToString()))" />
+            
+            <p>Username : <input type="text" name="Username" placeholder="Username" value="@ViewBag.ApplicantName" required /></p>
+            <p>Email : <input type="email" name="Email" placeholder="Email" value="@ViewBag.ApplicantEmail" required /></p>
+            <p>Phone Number : <input type="tel" name="PhoneNumber" placeholder="Phone Number" value="@ViewBag.ApplicantPhone" /></p>
+            <p>Date of Birth : <input type="date" name="DateOfBirth" placeholder="Date of Birth" value="@ViewBag.ApplicantDateOfBirth" /></p>
+            
+            <div id="passwordSection">
+                <p>Password : <input type="password" id="passwordField" name="Password" /></p>
+                <p><small class="text-muted" id="passwordHelp">Leave blank to auto-generate a temporary password. User can reset it from the sign in page.</small></p>
+                <p><small class="text-danger" id="passwordError" style="display: none;">Password must be at least 6 characters long.</small></p>
+            </div>
+            
+            <p>Role:
+                <label><input type="radio" name="Role" value="participant" checked required> Participant</label>
+                <label><input type="radio" name="Role" value="volunteer"> Volunteer</label>
+            </p>
+
+            <input type="submit" value="Create User Account" />
+        }
+
+    </div>
+</div>
+
+<script>
+    // Handle conditional password field behavior
+    document.addEventListener('DOMContentLoaded', function() {
+        const isFromApplication = document.getElementById('isFromApplication').value === 'True';
+        const passwordField = document.getElementById('passwordField');
+        const passwordHelp = document.getElementById('passwordHelp');
+        
+        if (isFromApplication) {
+            // Coming from application approval - generate random password and make field readonly
+            const randomPassword = generateRandomPassword();
+            passwordField.value = randomPassword;
+            passwordField.readOnly = true;
+            passwordHelp.innerHTML = '<strong>Auto-generated password for approved application.</strong> User can reset it from the sign in page.';
+            passwordHelp.className = 'text-info';
+        } else {
+            // Manual account creation - allow password input
+            passwordField.readOnly = false;
+            passwordHelp.innerHTML = 'Leave blank to auto-generate a temporary password. User can reset it from the sign in page.';
+            passwordHelp.className = 'text-muted';
+        }
+
+        // Add real-time validation
+        passwordField.addEventListener('blur', validatePassword);
+        passwordField.addEventListener('input', function() {
+            if (passwordField.value.length > 0) {
+                validatePassword();
+            } else {
+                hidePasswordError();
+            }
+        });
+    });
+
+    function validatePassword() {
+        const passwordField = document.getElementById('passwordField');
+        const passwordError = document.getElementById('passwordError');
+        
+        if (passwordField.value.length > 0 && passwordField.value.length < 6) {
+            passwordError.style.display = 'block';
+            return false;
+        } else {
+            passwordError.style.display = 'none';
+            return true;
+        }
+    }
+
+    function hidePasswordError() {
+        const passwordError = document.getElementById('passwordError');
+        passwordError.style.display = 'none';
+    }
+
+    function validateForm() {
+        const passwordField = document.getElementById('passwordField');
+        
+        // If password field has content, validate it
+        if (passwordField.value.length > 0) {
+            if (passwordField.value.length < 6) {
+                validatePassword(); // Show error message
+                passwordField.focus();
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    function generateRandomPassword() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@@##$$%";
+        let password = "";
+        for (let i = 0; i < 12; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return password;
+    }
+
+    // Original country/city dropdown code (keeping existing functionality)
+    const Countrydropdown = document.getElementById('CountryDropDown');
+    const CityDropdown = document.getElementById('CityDropDown');
+    const contactInput = document.getElementById('contacticc')
+    if (Countrydropdown) {
+        Countrydropdown.addEventListener("change", function () {
+        const country = Countrydropdown.value
+        if (country != null) {
+            fetch('https://raw.githubusercontent.com/russ666/all-countries-and-cities-json/master/countries.json') //find directory for countries.json and the internationalcalling code
+                .then(response => response.json())
+                .then(data => {
+                    const cities = data[country];
+                    CityDropdown.innerHTML = '';
+                    cities.forEach(city => {
+                        const option = document.createElement('option');
+                        option.value = city;
+                        option.text = city;
+                        CityDropdown.appendChild(option);
+                    });
+
+                })
+            fetch('https://gist.githubusercontent.com/anubhavshrimal/75f6183458db8c453306f93521e93d37/raw/f77e7598a8503f1f70528ae1cbf9f66755698a16/CountryCodes.json') //find directory for internationalcode.json in the directory and put here i just use api for now
+                .then(response => response.json())
+                .then(data => {
+                    const countryvalue = data.find(obj => obj.name === country);
+
+                    if (countryvalue == null) {
+                        contactInput.value = "";
+                    }
+                    else {
+                        contactInput.value = countryvalue.dial_code;
+                    }
+
+                })
+
+        }
+        else {
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.text = 'Select a city';
+            placeholderOption.disabled = true;
+            placeholderOption.selected = true;
+            CityDropdown.appendChild(placeholderOption);
+        }
+        });
+    }
+</script>
+@if (TempData["SuccessMessage"] != null)
+{
+    <script>
+        alert("@TempData["SuccessMessage"]");
+    </script>
+}
+
