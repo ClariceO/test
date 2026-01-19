@@ -24,7 +24,7 @@ namespace H4G_Project.DAL
             // Configure your Firebase project details
             string projectId = "squad-60b0b";
             bucketName = "squad-60b0b.firebasestorage.app"; // Updated bucket name format
-            serviceAccountPath = Path.Combine(Directory.GetCurrentDirectory(), "DAL", "config", "squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json");
+            serviceAccountPath = Path.Combine(Directory.GetCurrentDirectory(), "squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json");
 
             Console.WriteLine($"Service account path: {serviceAccountPath}");
             Console.WriteLine($"File exists: {File.Exists(serviceAccountPath)}");
