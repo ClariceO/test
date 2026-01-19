@@ -2,19 +2,37 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using H4G_Project.DAL;
 using H4G_Project.Services;
-
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Firebase initialization for auth
+// Firebase initialization from base64 environment variable
 if (FirebaseApp.DefaultInstance == null)
 {
-    FirebaseApp.Create(new AppOptions
+    var firebaseCredentialsBase64 = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_BASE64");
+
+    if (string.IsNullOrEmpty(firebaseCredentialsBase64))
     {
-        Credential = GoogleCredential.FromFile(
-            Path.Combine(Directory.GetCurrentDirectory(), "DAL", "config", "squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json")
-        )
-    });
+        throw new InvalidOperationException("FIREBASE_CREDENTIALS_BASE64 environment variable is not set");
+    }
+
+    try
+    {
+        // Decode base64 to JSON string
+        var credentialsJson = Encoding.UTF8.GetString(Convert.FromBase64String(firebaseCredentialsBase64));
+
+        // Initialize Firebase
+        FirebaseApp.Create(new AppOptions
+        {
+            Credential = GoogleCredential.FromJson(credentialsJson)
+        });
+
+        Console.WriteLine("Firebase initialized successfully from environment variable");
+    }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException($"Failed to initialize Firebase: {ex.Message}", ex);
+    }
 }
 
 builder.Services.AddScoped<NotificationService>();
@@ -33,7 +51,6 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddScoped<UserDAL>();
 builder.Services.AddScoped<StaffDAL>();
-
 
 var app = builder.Build();
 

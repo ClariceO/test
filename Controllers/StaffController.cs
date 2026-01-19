@@ -513,36 +513,28 @@ namespace H4G_Project.Controllers
         // ===============================
         private async Task<string> UploadEventPhotoToFirebase(string eventId, IFormFile file)
         {
-            string bucketName = "squad-60b0b.firebasestorage.app"; // Firebase bucket
-            string serviceAccountPath = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "DAL", "config",
-                "squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json"
-            );
+            string bucketName = "squad-60b0b.firebasestorage.app";
 
-            var credential = GoogleCredential.FromFile(serviceAccountPath);
+            var credential = FirebaseHelper.GetCredential();
             var storageClient = await StorageClient.CreateAsync(credential);
 
             string fileName = $"eventPhotos/{eventId}{Path.GetExtension(file.FileName)}";
 
             using var stream = file.OpenReadStream();
 
-            // Generate a GUID token
             string downloadToken = Guid.NewGuid().ToString();
 
-            // Upload object with metadata for Firebase-style download token
             var obj = await storageClient.UploadObjectAsync(new Google.Apis.Storage.v1.Data.Object
             {
                 Bucket = bucketName,
                 Name = fileName,
                 ContentType = file.ContentType,
                 Metadata = new System.Collections.Generic.Dictionary<string, string>
-        {
-            { "firebaseStorageDownloadTokens", downloadToken }
-        }
+                {
+                    { "firebaseStorageDownloadTokens", downloadToken }
+                }
             }, stream);
 
-            // Construct the Firebase Storage download URL
             string url = $"https://firebasestorage.googleapis.com/v0/b/{bucketName}/o/{Uri.EscapeDataString(fileName)}?alt=media&token={downloadToken}";
 
             return url;
