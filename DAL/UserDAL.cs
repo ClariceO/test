@@ -1,6 +1,7 @@
 ﻿using Google.Cloud.Firestore;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using H4G_Project.Models;
 
@@ -12,13 +13,19 @@ namespace H4G_Project.DAL
 
         public UserDAL()
         {
+            string jsonPath = "./DAL/config/squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json";
+            string projectId = "squad-60b0b";
+            using StreamReader r = new StreamReader(jsonPath);
+            string json = r.ReadToEnd();
+
             db = new FirestoreDbBuilder
             {
-                ProjectId = FirebaseHelper.GetProjectId(),
-                JsonCredentials = FirebaseHelper.GetCredentialsJson()
+                ProjectId = projectId,
+                JsonCredentials = json
             }.Build();
         }
 
+        // Get user by username
         public async Task<User?> GetUserByUsername(string username)
         {
             CollectionReference usersRef = db.Collection("users");
@@ -34,6 +41,7 @@ namespace H4G_Project.DAL
             return null;
         }
 
+        // Get user by email
         public async Task<User?> GetUserByEmail(string email)
         {
             CollectionReference usersRef = db.Collection("users");
@@ -49,6 +57,7 @@ namespace H4G_Project.DAL
             return null;
         }
 
+        // Add new user
         public async Task<bool> AddUser(User user)
         {
             try
@@ -57,11 +66,11 @@ namespace H4G_Project.DAL
                 {
                     { "Username", user.Username },
                     { "Email", user.Email },
-                    { "PhoneNumber", user.PhoneNumber ?? "" },
-                    { "DateOfBirth", user.DateOfBirth ?? "" },
+                    { "PhoneNumber", user.PhoneNumber ?? "" }, // Add phone number field
+                    { "DateOfBirth", user.DateOfBirth ?? "" }, // Add date of birth field
                     { "Role", user.Role },
-                    { "EngagementType", user.EngagementType ?? "Ad hoc engagement" },
-                    { "LastDayOfService", user.LastDayOfService ?? null }
+                    { "EngagementType", user.EngagementType ?? "Ad hoc engagement" }, // Default engagement type
+                    { "LastDayOfService", user.LastDayOfService ?? null } // Default to null
                 };
 
                 await db.Collection("users").AddAsync(userData);
@@ -74,6 +83,7 @@ namespace H4G_Project.DAL
             }
         }
 
+        // Get all users
         public async Task<List<User>> GetAllUsers()
         {
             CollectionReference usersRef = db.Collection("users");
@@ -89,6 +99,7 @@ namespace H4G_Project.DAL
             return userList;
         }
 
+        // Delete user by email
         public async Task<bool> DeleteUser(string email)
         {
             try
@@ -104,7 +115,7 @@ namespace H4G_Project.DAL
                     return true;
                 }
 
-                return false;
+                return false; // User not found
             }
             catch (Exception ex)
             {
@@ -113,6 +124,7 @@ namespace H4G_Project.DAL
             }
         }
 
+        // Update user LastDayOfService (for deactivation)
         public async Task<bool> UpdateUserLastDayOfService(string email, string lastDayOfService)
         {
             try
@@ -132,7 +144,7 @@ namespace H4G_Project.DAL
                     return true;
                 }
 
-                return false;
+                return false; // User not found
             }
             catch (Exception ex)
             {
@@ -141,6 +153,7 @@ namespace H4G_Project.DAL
             }
         }
 
+        // Update user engagement type
         public async Task<bool> UpdateEngagementType(string email, string engagementType)
         {
             try
@@ -156,7 +169,7 @@ namespace H4G_Project.DAL
                     return true;
                 }
 
-                return false;
+                return false; // User not found
             }
             catch (Exception ex)
             {

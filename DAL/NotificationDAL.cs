@@ -2,6 +2,7 @@ using Google.Cloud.Firestore;
 using H4G_Project.Models;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,13 +14,19 @@ namespace H4G_Project.DAL
 
         public NotificationDAL()
         {
+            string jsonPath = "./DAL/config/squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json";
+            string projectId = "squad-60b0b";
+            using StreamReader r = new StreamReader(jsonPath);
+            string json = r.ReadToEnd();
+
             db = new FirestoreDbBuilder
             {
-                ProjectId = FirebaseHelper.GetProjectId(),
-                JsonCredentials = FirebaseHelper.GetCredentialsJson()
+                ProjectId = projectId,
+                JsonCredentials = json
             }.Build();
         }
 
+        // Add a new notification
         public async Task<bool> AddNotification(Notification notification)
         {
             try
@@ -36,17 +43,20 @@ namespace H4G_Project.DAL
             }
         }
 
+        // Get all notifications for a specific user
         public async Task<List<Notification>> GetUserNotifications(string userEmail)
         {
             try
             {
                 Console.WriteLine($"NotificationDAL: Getting notifications for '{userEmail}'");
 
+                // First, let's see what's actually in the notifications collection
                 var allNotificationsQuery = db.Collection("notifications");
                 var allSnapshot = await allNotificationsQuery.GetSnapshotAsync();
 
                 Console.WriteLine($"NotificationDAL: Total notifications in database: {allSnapshot.Documents.Count}");
 
+                // Log first few notifications to see the structure
                 foreach (var doc in allSnapshot.Documents.Take(3))
                 {
                     var data = doc.ToDictionary();
@@ -59,7 +69,7 @@ namespace H4G_Project.DAL
 
                 var query = db.Collection("notifications")
                              .WhereEqualTo("UserId", userEmail)
-                             .Limit(50);
+                             .Limit(50); // Remove OrderBy temporarily to avoid index requirement
 
                 var snapshot = await query.GetSnapshotAsync();
                 var notifications = new List<Notification>();
@@ -73,9 +83,12 @@ namespace H4G_Project.DAL
                         var notification = doc.ConvertTo<Notification>();
                         notification.Id = doc.Id;
 
+                        // Convert Firestore Timestamp to a format JavaScript can understand
                         if (notification.CreatedAt != null)
                         {
+                            // Convert to ISO string for JavaScript
                             var dateTime = notification.CreatedAt.ToDateTime();
+                            // We'll send it as milliseconds since epoch for easier JavaScript handling
                             var data = doc.ToDictionary();
                             data["createdAtMs"] = dateTime.Subtract(new DateTime(1970, 1, 1)).TotalMilliseconds;
                         }
@@ -95,6 +108,7 @@ namespace H4G_Project.DAL
             }
         }
 
+        // Get unread notification count for a user
         public async Task<int> GetUnreadCount(string userEmail)
         {
             try
@@ -113,6 +127,7 @@ namespace H4G_Project.DAL
             }
         }
 
+        // Mark notification as read
         public async Task<bool> MarkAsRead(string notificationId)
         {
             try
@@ -128,6 +143,7 @@ namespace H4G_Project.DAL
             }
         }
 
+        // Mark all notifications as read for a user
         public async Task<bool> MarkAllAsRead(string userEmail)
         {
             try
@@ -153,19 +169,22 @@ namespace H4G_Project.DAL
             }
         }
 
+        // Create notifications for all registered users of an event
         public async Task<bool> CreateCommentNotifications(string eventId, string eventName, string staffUsername, string comment)
         {
             try
             {
+                // Get registered users for this event
                 var eventsDAL = new EventsDAL();
                 var registeredUsers = await eventsDAL.GetRegisteredUsers(eventId);
 
                 if (!registeredUsers.Any())
                 {
                     Console.WriteLine($"No registered users found for event {eventId}");
-                    return true;
+                    return true; // Not an error, just no users to notify
                 }
 
+                // Create notification for each registered user
                 foreach (var user in registeredUsers)
                 {
                     var notification = new Notification

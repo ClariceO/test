@@ -14,10 +14,16 @@ namespace H4G_Project.DAL
 
         public EventsDAL()
         {
+            string jsonPath = "./DAL/config/squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json";
+            string projectId = "squad-60b0b";
+
+            using StreamReader r = new StreamReader(jsonPath);
+            string json = r.ReadToEnd();
+
             db = new FirestoreDbBuilder
             {
-                ProjectId = FirebaseHelper.GetProjectId(),
-                JsonCredentials = FirebaseHelper.GetCredentialsJson()
+                ProjectId = projectId,
+                JsonCredentials = json
             }.Build();
         }
 
