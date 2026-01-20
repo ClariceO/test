@@ -14,7 +14,7 @@ namespace H4G_Project.DAL
 
         public EventsDAL()
         {
-            string jsonPath = "squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json";
+            string jsonPath = "./DAL/config/squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json";
             string projectId = "squad-60b0b";
 
             using StreamReader r = new StreamReader(jsonPath);

@@ -516,7 +516,7 @@ namespace H4G_Project.Controllers
             string bucketName = "squad-60b0b.firebasestorage.app"; // Firebase bucket
             string serviceAccountPath = Path.Combine(
                 Directory.GetCurrentDirectory(),
-
+                "DAL", "config",
                 "squad-60b0b-firebase-adminsdk-fbsvc-cff3f594d5.json"
             );
 
